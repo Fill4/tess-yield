@@ -1,1 +1,3 @@
-# tess-yield
+# TESS Yield
+
+Requires tess.ebf file

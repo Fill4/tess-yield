@@ -20,8 +20,8 @@ G = 6.6743e-8
 # Execution flags
 star_population 			= 0
 planet_seeding 				= 1
-plot_hist 					= 1
-plot_hr 					= 1
+plot_hist 					= 0
+plot_hr 					= 0
 
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet, planet_mass, planet_radius, period,
 
@@ -99,14 +99,13 @@ if star_population:
 	
 	np.savetxt("data/star_sample.dat", data, fmt='%7d %9.4f %9.4f %9.4f %9.4f %12.4f %9.4f %6.1f', header=header)
 
-	# Build data matrix and save data in file
-
+	"""
 	# convert to apparent mag and apply reddening
-	#gxutil.abs2app(galaxia,corr=True)
+	gxutil.abs2app(galaxia,corr=True)
 
-	#plt.hist(galaxia['ubv_i'],bins=100)
-	#plt.show()
-
+	plt.hist(galaxia['ubv_i'],bins=100)
+	plt.show()
+	"""
 if planet_seeding:
 	_, _, _, mass, radius, teff, logg, observed_days = np.loadtxt("data/star_sample.dat", unpack=True)
 
@@ -152,6 +151,11 @@ if planet_seeding:
 	rho_star = mass[has_transit] / ((4.0/3.0) * np.pi * radius[has_transit]**3)
 	rho_sun = Msun / ((4.0/3.0) * np.pi * Rsun**3)
 	t_duration = 13 * (period[transiting_planet]/365.0)**(1.0/3.0) * (rho_star/rho_sun)**(-1.0/3.0) * (np.sqrt(1-b[transiting_planet]**2))
+
+	print("Number of stars with seeded planets: " + str(sum(has_planet)))
+	print("Percentage of stars with seeded planets: " + str(sum(has_planet)*1.0 / mass.size))
+	print("Number of stars with transiting planets: " + str(sum(transiting_planet)))
+	print("Percentage of transiting planets from seeded planets: " + str(sum(transiting_planet)*1.0 / sum(has_planet)*1.0))
 
 if plot_hist:
 	# PLots for all the planets
@@ -206,15 +210,6 @@ if plot_hist:
 	plt.ylabel(r"Frequency", fontsize=24)
 	plt.tick_params(labelsize=24)
 	plt.savefig("figures/" + "transit_duration.png")
-
-	plt.close("all")
-
-	"""
-	print("Number of stars with seeded planets: " + str(sum(has_planet)))
-	print("Percentage of stars with seeded planets: " + str(sum(has_planet)*1.0 / mass.size))
-	print("Number of stars with transiting planets: " + str(sum(transiting_planet_2)))
-	print("Percentage of transiting planets from seeded planets: " + str(sum(transiting_planet_2)*1.0 / sum(has_planet)*1.0))
-	"""
 
 if plot_hr:
 	# Cut in Teff

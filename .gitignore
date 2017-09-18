@@ -101,4 +101,4 @@ ENV/
 .mypy_cache/
 
 *.vscode
-./tess-yield/data/tess.ebf
+tess-yield/data/tess.ebf
