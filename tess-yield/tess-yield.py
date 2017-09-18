@@ -229,3 +229,4 @@ if plot_hr:
 	plt.ylabel(r"log $g$ (g $cm^{-2}$)", fontsize=24)
 	plt.tick_params(labelsize=24)
 	plt.savefig("figures/" + "hr_diagram.png")
+
