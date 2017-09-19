@@ -5,7 +5,6 @@ import ebf
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
-import astropy.coordinates as coord
 import tvguide
 import scipy.stats as stats
 from despyastro.coords import *
@@ -23,7 +22,8 @@ planet_seeding 				= 1
 plot_hist 					= 0
 plot_hr 					= 0
 
-# Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet, planet_mass, planet_radius, period,
+# Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
+# Planet data: planet_mass, planet_radius, period, has_transit, t_duration
 
 # load simulation
 galaxia = ebf.read('data/tess.ebf','/')
@@ -152,10 +152,27 @@ if planet_seeding:
 	rho_sun = Msun / ((4.0/3.0) * np.pi * Rsun**3)
 	t_duration = 13 * (period[transiting_planet]/365.0)**(1.0/3.0) * (rho_star/rho_sun)**(-1.0/3.0) * (np.sqrt(1-b[transiting_planet]**2))
 
-	print("Number of stars with seeded planets: " + str(sum(has_planet)))
+	print("Number of stars with seeded planets: " + str(sum(has_planet) * 2))
 	print("Percentage of stars with seeded planets: " + str(sum(has_planet)*1.0 / mass.size))
-	print("Number of stars with transiting planets: " + str(sum(transiting_planet)))
+	print("Number of stars with transiting planets: " + str(sum(transiting_planet) * 2))
 	print("Percentage of transiting planets from seeded planets: " + str(sum(transiting_planet)*1.0 / sum(has_planet)*1.0))
+
+	coeffs = np.loadtxt("data/noisecoeffs.dat", unpack=True)
+	tdurs = np.array([0.1,0.5,1.0,1.5,2.0,2.5])
+
+	res = np.array([np.polyval(coeffs[:,i][::-1], logg[has_transit]) for i in range(6)])
+
+	rms = np.array([np.interp(t_duration[i]/24.0, tdurs, res[:,i]) for i in range(t_duration.size)])
+	SNR = 10
+	n_transits = np.trunc(observed_days[has_transit]/period[transiting_planet]).astype(int)
+
+	with np.errstate(divide='ignore'):
+		Rmin = radius[has_transit]*Rsun * ((SNR * rms)**0.5) * (n_transits**(-1.0/4))
+	det_planets = sum(Rmin < (planet_radius[transiting_planet] * Rearth))
+
+	print("Number of detectable transiting planets: " + str(det_planets*2))
+	print("Percentage of detectable planets from transiting planets: " + str(det_planets/sum(transiting_planet)))
+
 
 if plot_hist:
 	# PLots for all the planets
