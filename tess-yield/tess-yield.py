@@ -19,7 +19,7 @@ G = 6.6743e-8
 # Execution flags
 star_population 			= 0
 planet_seeding 				= 1
-plot_hist 					= 1
+plot_hist 					= 0
 plot_hr 					= 0
 
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
