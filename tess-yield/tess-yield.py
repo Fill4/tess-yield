@@ -19,7 +19,7 @@ G = 6.6743e-8
 # Execution flags
 star_population 			= 0
 planet_seeding 				= 1
-plot_hist 					= 0
+plot_hist 					= 1
 plot_hr 					= 0
 
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
@@ -184,7 +184,7 @@ if plot_hist:
 	plt.savefig("figures/" + "all_planet_radius_scale={:}.png".format(scale))
 
 	plt.figure(2, figsize=(24,16), dpi=100)
-	plt.hist(period, range=[0, 100], bins=20, normed=1)
+	plt.hist(period, range=[0, 100], bins=40, normed=1)
 	plt.xlabel(r"Planet Period [days]", fontsize=24)
 	plt.ylabel(r"Frequency", fontsize=24)
 	plt.tick_params(labelsize=24)
@@ -207,7 +207,7 @@ if plot_hist:
 	plt.savefig("figures/" + "transit_planet_radius_scale={:}.png".format(scale))
 
 	plt.figure(5, figsize=(24,16), dpi=100)
-	plt.hist(period[transiting_planet], range=[0, 100], bins=20, normed=1)
+	plt.hist(period[transiting_planet], range=[0, 100], bins=40, normed=1)
 	plt.xlabel(r"Planet Period [days]", fontsize=24)
 	plt.ylabel(r"Frequency", fontsize=24)
 	plt.tick_params(labelsize=24)
