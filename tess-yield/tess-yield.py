@@ -19,7 +19,7 @@ G = 6.6743e-8
 # Execution flags
 star_population 			= 0
 planet_seeding 				= 1
-plot_hist 					= 0
+plot_hist 					= 1
 plot_hr 					= 0
 
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
@@ -37,6 +37,7 @@ logg_upper = 3.5
 
 # Selects LLRGB stars south of the ecliptic that will be observed with TESS
 if star_population:
+	# -------- Synthetic stellar population ------------
 
 	# Cut in Teff
 	teff_cut = 10**galaxia["teff"] < teff_upper
@@ -107,6 +108,7 @@ if star_population:
 	plt.show()
 	"""
 if planet_seeding:
+	# -------- Planet Seeding ------------
 	_, _, _, mass, radius, teff, logg, observed_days = np.loadtxt("data/star_sample.dat", unpack=True)
 
 	# Rates
@@ -152,10 +154,7 @@ if planet_seeding:
 	rho_sun = Msun / ((4.0/3.0) * np.pi * Rsun**3)
 	t_duration = 13 * (period[transiting_planet]/365.0)**(1.0/3.0) * (rho_star/rho_sun)**(-1.0/3.0) * (np.sqrt(1-b[transiting_planet]**2))
 
-	print("Number of stars with seeded planets: " + str(sum(has_planet) * 2))
-	print("Percentage of stars with seeded planets: " + str(sum(has_planet)*1.0 / mass.size))
-	print("Number of stars with transiting planets: " + str(sum(transiting_planet) * 2))
-	print("Percentage of transiting planets from seeded planets: " + str(sum(transiting_planet)*1.0 / sum(has_planet)*1.0))
+	# -------- Transit Detectability ------------
 
 	coeffs = np.loadtxt("data/noisecoeffs.dat", unpack=True)
 	tdurs = np.array([0.1,0.5,1.0,1.5,2.0,2.5])
@@ -168,10 +167,20 @@ if planet_seeding:
 
 	with np.errstate(divide='ignore'):
 		Rmin = radius[has_transit]*Rsun * ((SNR * rms)**0.5) * (n_transits**(-1.0/4))
-	det_planets = sum(Rmin < (planet_radius[transiting_planet] * Rearth))
+	is_detectable = Rmin < (planet_radius[transiting_planet] * Rearth)
+	num_detectable = sum(is_detectable)
 
-	print("Number of detectable transiting planets: " + str(det_planets*2))
-	print("Percentage of detectable planets from transiting planets: " + str(det_planets/sum(transiting_planet)))
+	Rmin[Rmin == np.inf] = np.nan
+
+	#---------------------------------------------------------
+
+	print("Number of stars with seeded planets: " + str(sum(has_planet) * 2))
+	print("Percentage of stars with seeded planets: " + str(sum(has_planet)*1.0 / mass.size))
+	print("Number of stars with transiting planets: " + str(sum(transiting_planet) * 2))
+	print("Percentage of transiting planets from seeded planets: " + str(sum(transiting_planet)*1.0 / sum(has_planet)*1.0))
+
+	print("Number of detectable transiting planets: " + str(num_detectable*2))
+	print("Percentage of detectable planets from transiting planets: " + str(num_detectable/sum(transiting_planet)))
 
 
 if plot_hist:
@@ -228,6 +237,15 @@ if plot_hist:
 	plt.tick_params(labelsize=24)
 	plt.savefig("figures/" + "transit_duration.png")
 
+	plt.figure(8, figsize=(24,16), dpi=100)
+	plt.scatter(logg[has_transit][is_detectable], (planet_radius[transiting_planet][is_detectable]*Rearth) / Rmin[is_detectable], s=25, color='red', label="Detectable")
+	plt.scatter(logg[has_transit][~is_detectable], (planet_radius[transiting_planet][~is_detectable]*Rearth) / Rmin[~is_detectable], s=25, color='blue', label="Not detectable")
+	plt.xlabel(r"log $g$ (g $cm^{-2}$)", fontsize=24)
+	plt.ylabel(r"$R_{p}$ / $R_{min}$", fontsize=24)
+	plt.tick_params(labelsize=24)
+	plt.legend(fontsize=24)
+	plt.savefig("figures/" + "rmin_logg.png")
+
 if plot_hr:
 	# Cut in Teff
 	teff_cut = 10**galaxia["teff"] < teff_upper
@@ -237,7 +255,7 @@ if plot_hr:
 	llrgb_mask = np.logical_and(teff_cut, logg_cut)
 	non_llrgb_mask = np.invert(llrgb_mask)
 
-	plt.figure(8, figsize=(24,18), dpi=100)
+	plt.figure(9, figsize=(24,18), dpi=100)
 	plt.scatter(galaxia["teff"][non_llrgb_mask][1::500], galaxia["grav"][non_llrgb_mask][1::500], s=2, color="blue")
 	plt.scatter(galaxia["teff"][llrgb_mask][1::500], galaxia["grav"][llrgb_mask][1::500], s=2, color="red")
 	plt.gca().invert_xaxis()
@@ -247,3 +265,4 @@ if plot_hr:
 	plt.tick_params(labelsize=24)
 	plt.savefig("figures/" + "hr_diagram.png")
 
+plt.close("all")
