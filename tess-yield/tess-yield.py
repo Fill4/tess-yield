@@ -18,10 +18,10 @@ G = 6.6743e-8
 
 # Execution flags
 star_population 			= 0
-planet_seeding 				= 0
-plot_hist 					= 0
+planet_seeding 				= 1
+plot_hist 					= 1
 plot_hr 					= 0
-plot_result_distribution	= 1
+plot_result_distribution	= 0
 
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
@@ -113,12 +113,12 @@ if planet_seeding:
 	_, _, _, mass, radius, teff, logg, observed_days = np.loadtxt("data/star_sample.dat", unpack=True)
 
 	# Rates
-	planet_rate = 0.05
+	planet_rate = 0.1
 	# Seed planet
 	has_planet = np.random.uniform(0.0, 1.0, mass.size) < planet_rate
 
-	# Planet radius distribution.
-	lower, upper, scale = 4, 22, 9
+	# Planet radius distribution
+	lower, upper, scale = 4, 22, 18
 	X = stats.truncexpon(b=(upper-lower)/scale, loc=lower, scale=scale)
 
 	invalid_planets = np.copy(has_planet)
@@ -175,7 +175,6 @@ if planet_seeding:
 
 	#---------------------------------------------------------
 
-	"""
 	print("Number of stars with seeded planets: " + str(sum(has_planet) * 2))
 	print("Percentage of stars with seeded planets: " + str(sum(has_planet)*1.0 / mass.size))
 	print("Number of stars with transiting planets: " + str(sum(transiting_planet) * 2))
@@ -183,7 +182,6 @@ if planet_seeding:
 
 	print("Number of detectable transiting planets: " + str(num_detectable*2))
 	print("Percentage of detectable planets from transiting planets: " + str(num_detectable/sum(transiting_planet)))
-	"""
 
 if plot_hist:
 	# PLots for all the planets
@@ -202,10 +200,10 @@ if plot_hist:
 	plt.savefig("figures/" + "all_planet_period.png")
 
 	plt.figure(3, figsize=(24,18), dpi=100)
-	plt.scatter(planet_radius, period, color="blue", s=1)
+	plt.scatter(planet_radius, np.log(period), color="blue", s=1)
 	plt.xlabel(r"Planet Radius [$R_\oplus$]", fontsize=24)
 	plt.ylabel(r"Planet Period [days]", fontsize=24)
-	plt.ylim([0, 100])
+	#plt.ylim([0, 100])
 	plt.tick_params(labelsize=24)
 	plt.savefig("figures/" + "all_period_radius.png")
 
