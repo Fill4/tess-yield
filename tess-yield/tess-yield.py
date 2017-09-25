@@ -17,13 +17,13 @@ Rearth = 6.378e8
 G = 6.6743e-8
 
 # Execution flags
-verbose 					= 1
+verbose 					= 0
 
 star_population 			= 0
-planet_seeding 				= 0
+planet_seeding 				= 1
 plot_hist 					= 0
 plot_hr 					= 0
-plot_result_distribution	= 1
+plot_result_distribution	= 0
 
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
@@ -115,7 +115,7 @@ if planet_seeding:
 	_, _, _, mass, radius, teff, logg, observed_days = np.loadtxt("data/star_sample.dat", unpack=True)
 
 	# Rates
-	planet_rate = 0.1
+	planet_rate = 0.01
 	min_n_transits = 2
 	# Seed planet
 	has_planet = np.random.uniform(0.0, 1.0, mass.size) < planet_rate
