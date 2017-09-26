@@ -20,10 +20,10 @@ G = 6.6743e-8
 verbose 					= 0
 
 star_population 			= 0
-planet_seeding 				= 1
+planet_seeding 				= 0
 plot_hist 					= 0
 plot_hr 					= 0
-plot_result_distribution	= 0
+plot_result_distribution	= 1
 
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
