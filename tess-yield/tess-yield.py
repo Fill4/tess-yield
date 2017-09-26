@@ -271,27 +271,40 @@ if plot_hr:
 	plt.savefig("figures/" + "hr_diagram.png")
 
 if plot_result_distribution:
-	planets, transits, detections = np.loadtxt("data/planet_rate_0.1_ntr_2.dat", unpack=True)
+	planet_rates = [0.1, 0.05, 0.01]
+	for rate in planet_rates:
+		planets, transits, detections = np.loadtxt("data/planet_rate_"+str(rate)+"_ntr_2.dat", unpack=True)
 
-	plt.figure(10, figsize=(24,18), dpi=100)
-	plt.hist(planets, bins=20, normed=1)
-	plt.xlabel(r"Number of planets seeded", fontsize=24)
-	plt.ylabel(r"Frequency", fontsize=24)
-	plt.tick_params(labelsize=24)
-	plt.savefig("figures/" + "hist_planets_0.1_ntr_2.png")
+		plt.figure(10, figsize=(24,18), dpi=100)
+		plt.hist(planets, bins=20, normed=1, alpha=0.6, label="Planet rate - "+str(int(rate*100))+"%")
+		plt.xlabel(r"Number of planets seeded", fontsize=24)
+		plt.ylabel(r"Frequency", fontsize=24)
+		plt.tick_params(labelsize=24)
+		plt.legend(fontsize=24)
+		plt.savefig("figures/hist_results/" + "hist_planets_"+str(rate)+".png")
 
-	plt.figure(11, figsize=(24,18), dpi=100)
-	plt.hist(transits, bins=20, normed=1)
-	plt.xlabel(r"Number of planet transits", fontsize=24)
-	plt.ylabel(r"Frequency", fontsize=24)
-	plt.tick_params(labelsize=24)
-	plt.savefig("figures/" + "hist_transits_0.1_ntr_2.png")
+		plt.figure(11, figsize=(24,18), dpi=100)
+		plt.hist(transits, bins=20, normed=1, alpha=0.6, label="Planet rate - "+str(int(rate*100))+"%")
+		plt.xlabel(r"Number of planet transits", fontsize=24)
+		plt.ylabel(r"Frequency", fontsize=24)
+		plt.tick_params(labelsize=24)
+		plt.legend(fontsize=24)
+		plt.savefig("figures/hist_results/" + "hist_transits_"+str(rate)+".png")
 
-	plt.figure(12, figsize=(24,18), dpi=100)
-	plt.hist(detections, bins=20, normed=1)
-	plt.xlabel(r"Number of planet detections", fontsize=24)
-	plt.ylabel(r"Frequency", fontsize=24)
-	plt.tick_params(labelsize=24)
-	plt.savefig("figures/" + "hist_detections_0.1_ntr_2.png")
+		val = rate*100
+		plt.figure(12, figsize=(24,18), dpi=100)
+		if rate == 0.01:
+			bins = [0,2,4,6,8,10,12,14,16,18,20]
+			plt.xticks(bins)
+		else:
+			bins = 20
+		plt.hist(detections, bins=bins, normed=1, alpha=0.6, label="Planet rate - "+str(int(rate*100))+"%")
+		plt.xlabel(r"Number of planet detections", fontsize=24)
+		plt.ylabel(r"Frequency", fontsize=24)
+		plt.tick_params(labelsize=24)
+		plt.legend(fontsize=24)
+		plt.savefig("figures/hist_results/" + "hist_detections_"+str(rate)+".png")
+
+		plt.close("all")
 
 plt.close("all")
