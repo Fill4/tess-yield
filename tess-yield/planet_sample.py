@@ -17,7 +17,7 @@ G = 6.6743e-8
 # Execution flags
 verbose 					= 0
 
-planet_seeding 				= 0
+planet_seeding 				= 1
 plot_hist 					= 0
 plot_result_distribution	= 0
 
@@ -29,7 +29,7 @@ if planet_seeding:
 	_, _, _, mass, radius, teff, logg, observed_days = np.loadtxt("data/star_sample.dat", unpack=True)
 
 	# Rates
-	planet_rate = 0.01
+	planet_rate = 1.0
 	min_n_transits = 2
 	# Seed planet
 	has_planet = np.random.uniform(0.0, 1.0, mass.size) < planet_rate
@@ -62,34 +62,45 @@ if planet_seeding:
 	# Draw cos(i) distribution
 	cos_i = np.random.uniform(0.0, 1.0, sum(has_planet))
 	# Determine impact parameter
-	b = (a * cos_i) / (radius[has_planet]*Rsun)
+	#b = (a * cos_i) / (radius[has_planet]*Rsun)
+	b = np.zeros(planet_radius.size)
 	# Choose planets that transit the planet
 	has_transit = np.copy(has_planet)
 	has_transit[has_transit] = abs(b) < 1
 	transiting_planet = abs(b) < 1
 
+	# Determine density of star
 	rho_star = mass[has_transit] / ((4.0/3.0) * np.pi * radius[has_transit]**3)
 	rho_sun = Msun / ((4.0/3.0) * np.pi * Rsun**3)
+
+	# Determine transit duration and depth
 	t_duration = 13 * (period[transiting_planet]/365.0)**(1.0/3.0) * (rho_star/rho_sun)**(-1.0/3.0) * (np.sqrt(1-b[transiting_planet]**2))
+	t_depth = (planet_radius[transiting_planet]**2) / (radius[has_transit]**2)
+	# Determine number of transits. Use ceiling to improve number of planets
+	n_transits = np.ceil(observed_days[has_transit]/period[transiting_planet]).astype(int)
+
+	# Choose planets that transit more than 2 times
+	has_min_transits = np.copy(has_planet)
+	has_min_transits[has_min_transits] = n_transits >= min_n_transits
+	min_transits = n_transits >= min_n_transits
 
 	# -------- Transit Detectability ------------
-
+	# Use Dan Huber's method to determine rms values for a star's logg for various predefined transit durations
 	coeffs = np.loadtxt("data/noisecoeffs.dat", unpack=True)
 	tdurs = np.array([0.1,0.5,1.0,1.5,2.0,2.5])
+	res = np.array([np.polyval(coeffs[:,i][::-1], logg[has_min_transits]) for i in range(6)])
 
-	res = np.array([np.polyval(coeffs[:,i][::-1], logg[has_transit]) for i in range(6)])
+	# Determine the rms for the planets transit by interpolating the res values
+	rms = np.array([np.interp(t_duration[min_transits][i]/24.0, tdurs, res[:,i]) for i in range(t_duration[min_transits].size)])
+	
+	# Signal to noise ratio
+	#SNR = 10
+	SNR = (t_depth[min_transits] / (rms)) * np.sqrt(n_transits[min_transits])
 
-	rms = np.array([np.interp(t_duration[i]/24.0, tdurs, res[:,i]) for i in range(t_duration.size)])
-	SNR = 10
-	n_transits = np.trunc(observed_days[has_transit]/period[transiting_planet]).astype(int)
-
-	with np.errstate(divide='ignore'):
-		Rmin = radius[has_transit]*Rsun * ((SNR * rms)**0.5) * (n_transits**(-1.0/4))
-	is_detectable = Rmin < (planet_radius[transiting_planet] * Rearth)
-	is_detectable = np.logical_and(is_detectable, n_transits >= min_n_transits)
+	# Calculate minimum detectable radius
+	Rmin = radius[has_min_transits]*Rsun * ((SNR * rms)**0.5) * (n_transits[min_transits]**(-1.0/4))
+	is_detectable = Rmin < (planet_radius[min_transits] * Rearth)
 	num_detectable = sum(is_detectable)
-
-	Rmin[Rmin == np.inf] = np.nan
 
 	#---------------------------------------------------------
 
