@@ -75,7 +75,7 @@ if planet_seeding:
 
 	# Determine transit duration and depth
 	t_duration = 13 * (period[transiting_planet]/365.0)**(1.0/3.0) * (rho_star/rho_sun)**(-1.0/3.0) * (np.sqrt(1-b[transiting_planet]**2))
-	t_depth = (planet_radius[transiting_planet]**2) / (radius[has_transit]**2)
+	t_depth = ((planet_radius[transiting_planet] * Rearth)**2) / ((radius[has_transit] * Rsun)**2)
 	# Determine number of transits. Use ceiling to improve number of planets
 	n_transits = np.ceil(observed_days[has_transit]/period[transiting_planet]).astype(int)
 
