@@ -20,6 +20,7 @@ verbose 					= 0
 planet_seeding 				= 1
 plot_hist 					= 0
 plot_result_distribution	= 0
+build_csv					= 1
 
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
@@ -29,8 +30,11 @@ if planet_seeding:
 	_, _, _, mass, radius, teff, logg, observed_days = np.loadtxt("data/star_sample.dat", unpack=True)
 
 	# Rates
-	planet_rate = 1.0
+	planet_rate = 0.1
 	min_n_transits = 2
+	if build_csv:
+		planet_rate = 1.0
+		min_n_transits = 2
 	# Seed planet
 	has_planet = np.random.uniform(0.0, 1.0, mass.size) < planet_rate
 
@@ -62,8 +66,11 @@ if planet_seeding:
 	# Draw cos(i) distribution
 	cos_i = np.random.uniform(0.0, 1.0, sum(has_planet))
 	# Determine impact parameter
-	#b = (a * cos_i) / (radius[has_planet]*Rsun)
-	b = np.zeros(planet_radius.size)
+	if build_csv:
+		b = np.zeros(planet_radius.size)
+	else:
+		b = (a * cos_i) / (radius[has_planet]*Rsun)
+
 	# Choose planets that transit the planet
 	has_transit = np.copy(has_planet)
 	has_transit[has_transit] = abs(b) < 1
@@ -76,6 +83,7 @@ if planet_seeding:
 	# Determine transit duration and depth
 	t_duration = 13 * (period[transiting_planet]/365.0)**(1.0/3.0) * (rho_star/rho_sun)**(-1.0/3.0) * (np.sqrt(1-b[transiting_planet]**2))
 	t_depth = ((planet_radius[transiting_planet] * Rearth)**2) / ((radius[has_transit] * Rsun)**2)
+	
 	# Determine number of transits. Use ceiling to improve number of planets
 	n_transits = np.ceil(observed_days[has_transit]/period[transiting_planet]).astype(int)
 
@@ -94,13 +102,24 @@ if planet_seeding:
 	rms = np.array([np.interp(t_duration[min_transits][i]/24.0, tdurs, res[:,i]) for i in range(t_duration[min_transits].size)])
 	
 	# Signal to noise ratio
-	#SNR = 10
-	SNR = (t_depth[min_transits] / (rms)) * np.sqrt(n_transits[min_transits])
+	if build_csv:
+		SNR = (t_depth[min_transits] / (rms)) * np.sqrt(n_transits[min_transits])
+	else:
+		SNR = 10
 
 	# Calculate minimum detectable radius
 	Rmin = radius[has_min_transits]*Rsun * ((SNR * rms)**0.5) * (n_transits[min_transits]**(-1.0/4))
 	is_detectable = Rmin < (planet_radius[min_transits] * Rearth)
 	num_detectable = sum(is_detectable)
+
+	if build_csv:
+		data = np.column_stack((mass[has_min_transits], radius[has_min_transits], teff[has_min_transits], logg[has_min_transits], observed_days[has_min_transits], 
+								period[min_transits], planet_radius[min_transits], t_duration[min_transits], rms, SNR))
+
+		header = "Columns:\n{:} - {:} - {:} - {:} - {:} -\n{:} - {:} - {:} - {:} - {:}\n".format("Star Mass (Msun)", "Star Radius (Rsun)", "Teff (K)", 
+				"Log(g) (cm s-2)", "Obs time (days)", "Planet Period (days)", "Planet Radius (Rearth)", "Transit duration (hours)", "sigma", "SNR")
+		
+		np.savetxt("data/planet_sample.csv", data, fmt='%.4f,%.4f,%.4f,%.4f,%.1f,%.4f,%.4f,%.4f,%.10f,%.5f', header=header)
 
 	#---------------------------------------------------------
 
