@@ -20,7 +20,7 @@ verbose 					= 0
 planet_seeding 				= 1
 plot_hist 					= 0
 plot_result_distribution	= 0
-build_csv					= 1
+build_csv					= 0
 
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
@@ -72,65 +72,66 @@ if planet_seeding:
 		b = (a * cos_i) / (radius[has_planet]*Rsun)
 
 	# Choose planets that transit the planet
-	has_transit = np.copy(has_planet)
-	has_transit[has_transit] = abs(b) < 1
-	transiting_planet = abs(b) < 1
+	has_transit = abs(b) < 1
 
 	# Determine density of star
-	rho_star = mass[has_transit] / ((4.0/3.0) * np.pi * radius[has_transit]**3)
+	rho_star = mass[has_planet][has_transit] / ((4.0/3.0) * np.pi * radius[has_planet][has_transit]**3)
 	rho_sun = Msun / ((4.0/3.0) * np.pi * Rsun**3)
 
 	# Determine transit duration and depth
-	t_duration = 13 * (period[transiting_planet]/365.0)**(1.0/3.0) * (rho_star/rho_sun)**(-1.0/3.0) * (np.sqrt(1-b[transiting_planet]**2))
-	t_depth = ((planet_radius[transiting_planet] * Rearth)**2) / ((radius[has_transit] * Rsun)**2)
+	t_duration = 13 * (period[has_transit]/365.0)**(1.0/3.0) * (rho_star/rho_sun)**(-1.0/3.0) * (np.sqrt(1-b[has_transit]**2))
+	t_depth = ((planet_radius[has_transit] * Rearth)**2) / ((radius[has_planet][has_transit] * Rsun)**2)
 	
 	# Determine number of transits. Use ceiling to improve number of planets
-	n_transits = np.ceil(observed_days[has_transit]/period[transiting_planet]).astype(int)
+	n_transits = np.ceil(observed_days[has_planet][has_transit]/period[has_transit]).astype(int)
 
 	# Choose planets that transit more than 2 times
-	has_min_transits = np.copy(has_planet)
-	has_min_transits[has_min_transits] = n_transits >= min_n_transits
-	min_transits = n_transits >= min_n_transits
+	has_min_transits = n_transits >= min_n_transits
 
 	# -------- Transit Detectability ------------
 	# Use Dan Huber's method to determine rms values for a star's logg for various predefined transit durations
 	coeffs = np.loadtxt("data/noisecoeffs.dat", unpack=True)
 	tdurs = np.array([0.1,0.5,1.0,1.5,2.0,2.5])
-	res = np.array([np.polyval(coeffs[:,i][::-1], logg[has_min_transits]) for i in range(6)])
+	res = np.array([np.polyval(coeffs[:,i][::-1], logg[has_planet][has_transit][has_min_transits]) for i in range(6)])
 
 	# Determine the rms for the planets transit by interpolating the res values
-	rms = np.array([np.interp(t_duration[min_transits][i]/24.0, tdurs, res[:,i]) for i in range(t_duration[min_transits].size)])
+	rms = np.array([np.interp(t_duration[has_min_transits][i]/24.0, tdurs, res[:,i]) for i in range(t_duration[has_min_transits].size)])
 	
 	# Signal to noise ratio
 	if build_csv:
-		SNR = (t_depth[min_transits] / (rms)) * np.sqrt(n_transits[min_transits])
+		SNR = (t_depth[has_min_transits] / (rms)) * np.sqrt(n_transits[has_min_transits])
 	else:
 		SNR = 10
 
 	# Calculate minimum detectable radius
-	Rmin = radius[has_min_transits]*Rsun * ((SNR * rms)**0.5) * (n_transits[min_transits]**(-1.0/4))
-	is_detectable = Rmin < (planet_radius[min_transits] * Rearth)
+	Rmin = radius[has_planet][has_transit][has_min_transits]*Rsun * ((SNR * rms)**0.5) * (n_transits[has_min_transits]**(-1.0/4))
+	is_detectable = Rmin < (planet_radius[has_transit][has_min_transits] * Rearth)
 	num_detectable = sum(is_detectable)
 
 	if build_csv:
-		data = np.column_stack((mass[has_min_transits], radius[has_min_transits], teff[has_min_transits], logg[has_min_transits], observed_days[has_min_transits], 
-								period[min_transits], planet_radius[min_transits], t_duration[min_transits], rms, SNR))
+		data = np.column_stack((mass[has_planet][has_transit][has_min_transits], radius[has_planet][has_transit][has_min_transits], 
+								teff[has_planet][has_transit][has_min_transits], logg[has_planet][has_transit][has_min_transits], 
+								observed_days[has_planet][has_transit][has_min_transits], period[has_transit][has_min_transits], 
+								planet_radius[has_transit][has_min_transits], t_duration[has_min_transits], rms, SNR))
 
 		header = "Columns:\n{:} - {:} - {:} - {:} - {:} -\n{:} - {:} - {:} - {:} - {:}\n".format("Star Mass (Msun)", "Star Radius (Rsun)", "Teff (K)", 
 				"Log(g) (cm s-2)", "Obs time (days)", "Planet Period (days)", "Planet Radius (Rearth)", "Transit duration (hours)", "sigma", "SNR")
 		
 		np.savetxt("data/planet_sample.csv", data, fmt='%.4f,%.4f,%.4f,%.4f,%.1f,%.4f,%.4f,%.4f,%.10f,%.5f', header=header)
 
+	with open("data/planet_rate_" + str(planet_rate) + ".dat", "a") as f:
+		f.write("{:9d}   {:8d}   {:10d}\n".format(sum(has_planet) * 2, sum(has_transit) * 2, num_detectable * 2))
+
 	#---------------------------------------------------------
 
 	if verbose:
 		print("Number of stars with seeded planets: " + str(sum(has_planet) * 2))
 		print("Percentage of stars with seeded planets: " + str(sum(has_planet)*1.0 / mass.size))
-		print("Number of stars with transiting planets: " + str(sum(transiting_planet) * 2))
-		print("Percentage of transiting planets from seeded planets: " + str(sum(transiting_planet)*1.0 / sum(has_planet)*1.0))
+		print("Number of stars with transiting planets: " + str(sum(has_transit) * 2))
+		print("Percentage of transiting planets from seeded planets: " + str(sum(has_transit)*1.0 / sum(has_planet)*1.0))
 
 		print("Number of detectable transiting planets: " + str(num_detectable*2))
-		print("Percentage of detectable planets from transiting planets: " + str(num_detectable/sum(transiting_planet)))
+		print("Percentage of detectable planets from transiting planets: " + str(num_detectable/sum(has_transit)))
  	
 if plot_hist:
 	# PLots for all the planets
@@ -158,21 +159,21 @@ if plot_hist:
 
 	# Plots for transiting planets
 	plt.figure(4, figsize=(24,16), dpi=100)
-	plt.hist(planet_radius[transiting_planet], bins=20, normed=1)
+	plt.hist(planet_radius[has_transit][has_min_transits], bins=20, normed=1)
 	plt.xlabel(r"Planet Radius [$R_\oplus$]", fontsize=24)
 	plt.ylabel(r"Frequency", fontsize=24)
 	plt.tick_params(labelsize=24)
 	plt.savefig("figures/" + "transit_planet_radius_scale={:}.png".format(scale))
 
 	plt.figure(5, figsize=(24,16), dpi=100)
-	plt.hist(period[transiting_planet], range=[0, 100], bins=40, normed=1)
+	plt.hist(period[has_transit][has_min_transits], range=[0, 100], bins=40, normed=1)
 	plt.xlabel(r"Planet Period [days]", fontsize=24)
 	plt.ylabel(r"Frequency", fontsize=24)
 	plt.tick_params(labelsize=24)
 	plt.savefig("figures/" + "transit_planet_period.png")
 
 	plt.figure(6, figsize=(24,18), dpi=100)
-	plt.scatter(planet_radius[transiting_planet], period[transiting_planet], color="blue", s=10)
+	plt.scatter(planet_radius[has_transit][has_min_transits], period[has_transit][has_min_transits], color="blue", s=10)
 	plt.xlabel(r"Planet Radius [$R_\oplus$]", fontsize=24)
 	plt.ylabel(r"Planet Period [days]", fontsize=24)
 	plt.ylim([0, 100])
@@ -187,8 +188,12 @@ if plot_hist:
 	plt.savefig("figures/" + "transit_duration.png")
 
 	plt.figure(8, figsize=(24,16), dpi=100)
-	plt.scatter(logg[has_transit][is_detectable], (planet_radius[transiting_planet][is_detectable]*Rearth) / Rmin[is_detectable], s=25, color='red', label="Detectable")
-	plt.scatter(logg[has_transit][~is_detectable], (planet_radius[transiting_planet][~is_detectable]*Rearth) / Rmin[~is_detectable], s=25, color='blue', label="Not detectable")
+	plt.scatter(logg[has_planet][has_transit][has_min_transits][is_detectable], 
+		(planet_radius[has_transit][has_min_transits][is_detectable]*Rearth) / Rmin[is_detectable], 
+		s=25, color='red', label="Detectable")
+	plt.scatter(logg[has_planet][has_transit][has_min_transits][~is_detectable], 
+		(planet_radius[has_transit][has_min_transits][~is_detectable]*Rearth) / Rmin[~is_detectable], 
+		s=25, color='blue', label="Not detectable")
 	plt.xlabel(r"log $g$ (g $cm^{-2}$)", fontsize=24)
 	plt.ylabel(r"$R_{p}$ / $R_{min}$", fontsize=24)
 	plt.tick_params(labelsize=24)
