@@ -204,9 +204,11 @@ if plot_hist:
 
 if plot_result_distribution:
 	planet_rates = [0.1, 0.05, 0.01]
+	print_top = 1
 	for rate in planet_rates:
 		planets, transits, detections = np.loadtxt("data/planet_rate_"+str(rate)+".dat", unpack=True)
 
+		"""
 		plt.figure(10, figsize=(24,18), dpi=100)
 		plt.hist(planets, bins=20, normed=1, alpha=0.6, label="Planet rate - "+str(int(rate*100))+"%")
 		plt.xlabel(r"Number of planets seeded", fontsize=24)
@@ -239,5 +241,11 @@ if plot_result_distribution:
 		plt.savefig("figures/hist_results/" + "hist_detections_"+str(rate)+".png")
 
 		plt.close("all")
+		"""
+
+		if print_top:
+			print("{:^11} | {:^11} | {:^11}".format("Planet rate", "Median", "Std. Dev."))
+			print_top = 0
+		print("{:^11}   {:^11.1f}   {:^11.4f}".format(str(int(rate*100)) + " %", np.median(detections), np.std(detections)))
 
 plt.close("all")
