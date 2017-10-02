@@ -17,10 +17,11 @@ G = 6.6743e-8
 # Execution flags
 verbose 					= 0
 
-planet_seeding 				= 1
+planet_seeding 				= 0
 plot_hist 					= 0
-plot_result_distribution	= 0
+plot_result_distribution	= 1
 build_csv					= 0
+write_output				= 0
 
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
@@ -30,7 +31,7 @@ if planet_seeding:
 	_, _, _, mass, radius, teff, logg, observed_days = np.loadtxt("data/star_sample.dat", unpack=True)
 
 	# Rates
-	planet_rate = 0.1
+	planet_rate = 0.01
 	min_n_transits = 2
 	if build_csv:
 		planet_rate = 1.0
@@ -119,8 +120,9 @@ if planet_seeding:
 		
 		np.savetxt("data/planet_sample.csv", data, fmt='%.4f,%.4f,%.4f,%.4f,%.1f,%.4f,%.4f,%.4f,%.10f,%.5f', header=header)
 
-	with open("data/planet_rate_" + str(planet_rate) + ".dat", "a") as f:
-		f.write("{:9d}   {:8d}   {:10d}\n".format(sum(has_planet) * 2, sum(has_transit) * 2, num_detectable * 2))
+	if write_output:
+		with open("data/planet_rate_" + str(planet_rate) + ".dat", "a") as f:
+			f.write("{:9d}   {:8d}   {:10d}\n".format(sum(has_planet) * 2, sum(has_transit) * 2, num_detectable * 2))
 
 	#---------------------------------------------------------
 
@@ -203,7 +205,7 @@ if plot_hist:
 if plot_result_distribution:
 	planet_rates = [0.1, 0.05, 0.01]
 	for rate in planet_rates:
-		planets, transits, detections = np.loadtxt("data/planet_rate_"+str(rate)+"_ntr_2.dat", unpack=True)
+		planets, transits, detections = np.loadtxt("data/planet_rate_"+str(rate)+".dat", unpack=True)
 
 		plt.figure(10, figsize=(24,18), dpi=100)
 		plt.hist(planets, bins=20, normed=1, alpha=0.6, label="Planet rate - "+str(int(rate*100))+"%")
@@ -225,7 +227,8 @@ if plot_result_distribution:
 		plt.figure(12, figsize=(24,18), dpi=100)
 		if rate == 0.01:
 			bins = [0,2,4,6,8,10,12,14,16,18,20]
-			plt.xticks(bins)
+			plt.xticks=(bins)
+			#plt.xticks(np.linspace(0,100,num=100/4+1))
 		else:
 			bins = 20
 		plt.hist(detections, bins=bins, normed=1, alpha=0.6, label="Planet rate - "+str(int(rate*100))+"%")
