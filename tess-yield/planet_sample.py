@@ -33,9 +33,12 @@ if planet_seeding:
 	# Rates
 	planet_rate = 0.01
 	min_n_transits = 2
+
+	# Parameter definition for building csv data
 	if build_csv:
 		planet_rate = 1.0
 		min_n_transits = 2
+
 	# Seed planet
 	has_planet = np.random.uniform(0.0, 1.0, mass.size) < planet_rate
 
@@ -54,7 +57,7 @@ if planet_seeding:
 		# Determine Roche limit
 		roche = 1.26 * planet_radius*Rearth * (mass[invalid_planets]*Msun / (planet_mass*Mearth))**(1.0/3.0)
 		# Determine semi-major axis
-		a = ((G * mass[invalid_planets]*Msun * (period*365.25*24*3600)**2) / (4 * np.pi**2))**(1.0/3.0)
+		a = ((G * mass[invalid_planets]*Msun * (period*24*3600)**2) / (4 * np.pi**2))**(1.0/3.0)
 		# Check if any star is above roche limit
 		n_invalid_planets = sum(a < roche)
 		# If there are no invalid planets exit loop
@@ -76,7 +79,7 @@ if planet_seeding:
 	has_transit = abs(b) < 1
 
 	# Determine density of star
-	rho_star = mass[has_planet][has_transit] / ((4.0/3.0) * np.pi * radius[has_planet][has_transit]**3)
+	rho_star = (mass[has_planet][has_transit]*Mearth) / ((4.0/3.0) * np.pi * (radius[has_planet][has_transit]*Rearth)**3)
 	rho_sun = Msun / ((4.0/3.0) * np.pi * Rsun**3)
 
 	# Determine transit duration and depth
@@ -208,7 +211,7 @@ if plot_result_distribution:
 	for rate in planet_rates:
 		planets, transits, detections = np.loadtxt("data/planet_rate_"+str(rate)+".dat", unpack=True)
 
-		"""
+		
 		plt.figure(10, figsize=(24,18), dpi=100)
 		plt.hist(planets, bins=20, normed=1, alpha=0.6, label="Planet rate - "+str(int(rate*100))+"%")
 		plt.xlabel(r"Number of planets seeded", fontsize=24)
@@ -241,8 +244,7 @@ if plot_result_distribution:
 		plt.savefig("figures/hist_results/" + "hist_detections_"+str(rate)+".png")
 
 		plt.close("all")
-		"""
-
+		
 		if print_top:
 			print("{:^11} | {:^11} | {:^11}".format("Planet rate", "Median", "Std. Dev."))
 			print_top = 0
