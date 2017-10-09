@@ -17,11 +17,11 @@ G = 6.6743e-8
 # Execution flags
 verbose 					= 0
 
-planet_seeding 				= 0
+planet_seeding 				= 1
 plot_hist 					= 0
-plot_result_distribution	= 1
+plot_result_distribution	= 0
 build_csv					= 0
-write_output				= 0
+write_output				= 1
 
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
@@ -31,7 +31,7 @@ if planet_seeding:
 	_, _, _, mass, radius, teff, logg, observed_days = np.loadtxt("data/star_sample.dat", unpack=True)
 
 	# Rates
-	planet_rate = 0.01
+	planet_rate = 0.1
 	min_n_transits = 2
 
 	# Parameter definition for building csv data
