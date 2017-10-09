@@ -15,13 +15,13 @@ Rearth = 6.378e8
 G = 6.6743e-8
 
 # Execution flags
-verbose 					= 0
+verbose 					= 1
 
 planet_seeding 				= 1
 plot_hist 					= 0
 plot_result_distribution	= 0
 build_csv					= 0
-write_output				= 1
+write_output				= 0
 
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
@@ -31,7 +31,7 @@ if planet_seeding:
 	_, _, _, mass, radius, teff, logg, observed_days = np.loadtxt("data/star_sample.dat", unpack=True)
 
 	# Rates
-	planet_rate = 0.1
+	planet_rate = 0.01
 	min_n_transits = 2
 
 	# Parameter definition for building csv data
@@ -46,29 +46,35 @@ if planet_seeding:
 	lower, upper, scale = 4, 22, 18
 	X = stats.truncexpon(b=(upper-lower)/scale, loc=lower, scale=scale)
 
-	invalid_planets = np.copy(has_planet)
+	# Create arrays for while loop
+	period 			= np.zeros(has_planet.sum())
+	planet_radius 	= np.zeros(has_planet.sum())
+	planet_mass 	= np.zeros(has_planet.sum())
+	roche 			= np.zeros(has_planet.sum())
+	a 				= np.zeros(has_planet.sum())
+
+	invalid_planets = np.ones(has_planet.sum(), dtype=bool)
 	while np.any(invalid_planets):
 		# Draw period samples (in days from a lognormal distribution. Values from Thomas North)
-		period = np.random.lognormal(2.344, 1.275, sum(invalid_planets))
+		period[invalid_planets] = np.random.lognormal(2.344, 1.275, invalid_planets.sum())
 		# Draw planet radius samples (in R_earth)
-		planet_radius = X.rvs(sum(invalid_planets))
+		planet_radius[invalid_planets] = X.rvs(invalid_planets.sum())
 		# Determine planet mass using Equation 29 from Sullivan et al. 2015 (in M_earth)
-		planet_mass = 2.69 * planet_radius**0.93
+		planet_mass[invalid_planets] = 2.69 * planet_radius[invalid_planets]**0.93
 		# Determine Roche limit
-		roche = 1.26 * planet_radius*Rearth * (mass[invalid_planets]*Msun / (planet_mass*Mearth))**(1.0/3.0)
+		roche[invalid_planets] = 1.26 * planet_radius[invalid_planets]*Rearth * (mass[has_planet][invalid_planets]*Msun / (planet_mass[invalid_planets]*Mearth))**(1.0/3.0)
 		# Determine semi-major axis
-		a = ((G * mass[invalid_planets]*Msun * (period*24*3600)**2) / (4 * np.pi**2))**(1.0/3.0)
+		a[invalid_planets] = ((G * mass[has_planet][invalid_planets]*Msun * (period[invalid_planets]*24*3600)**2) / (4 * np.pi**2))**(1.0/3.0)
 		# Check if any star is above roche limit
 		n_invalid_planets = sum(a < roche)
 		# If there are no invalid planets exit loop
 		if n_invalid_planets != 0:
-			invalid_planets[invalid_planets] = a < roche
+			invalid_planets = a < roche
 		else:
 			break
-			
 
 	# Draw cos(i) distribution
-	cos_i = np.random.uniform(0.0, 1.0, sum(has_planet))
+	cos_i = np.random.uniform(0.0, 1.0, has_planet.sum())
 	# Determine impact parameter
 	if build_csv:
 		b = np.zeros(planet_radius.size)
