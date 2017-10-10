@@ -116,7 +116,7 @@ if planet_seeding:
 	# Calculate minimum detectable radius
 	Rmin = radius[has_planet][has_transit][has_min_transits]*Rsun * ((SNR * rms)**0.5) * (n_transits[has_min_transits]**(-1.0/4))
 	is_detectable = Rmin < (planet_radius[has_transit][has_min_transits] * Rearth)
-	num_detectable = sum(is_detectable)
+	num_detectable = is_detectable.sum()
 
 	if build_csv:
 		data = np.column_stack((mass[has_planet][has_transit][has_min_transits], radius[has_planet][has_transit][has_min_transits], 
@@ -131,18 +131,17 @@ if planet_seeding:
 
 	if write_output:
 		with open("data/planet_rate_" + str(planet_rate) + ".dat", "a") as f:
-			f.write("{:9d}   {:8d}   {:10d}\n".format(sum(has_planet) * 2, sum(has_transit) * 2, num_detectable * 2))
+			f.write("{:9d}   {:8d}   {:10d}\n".format(has_planet.sum() * 2, has_transit.sum() * 2, num_detectable * 2))
 
 	#---------------------------------------------------------
 
 	if verbose:
-		print("Number of stars with seeded planets: " + str(sum(has_planet) * 2))
-		print("Percentage of stars with seeded planets: " + str(sum(has_planet)*1.0 / mass.size))
-		print("Number of stars with transiting planets: " + str(sum(has_transit) * 2))
-		print("Percentage of transiting planets from seeded planets: " + str(sum(has_transit)*1.0 / sum(has_planet)*1.0))
-
-		print("Number of detectable transiting planets: " + str(num_detectable*2))
-		print("Percentage of detectable planets from transiting planets: " + str(num_detectable/sum(has_transit)))
+		print("\nNumber of stars with seeded planets: " + str(has_planet.sum() * 2))
+		print("Percentage of stars with seeded planets: " + str(has_planet.sum()*1.0 / mass.size))
+		print("\nNumber of stars with transiting planets: " + str(has_transit.sum() * 2))
+		print("Percentage of transiting planets from seeded planets: " + str(has_transit.sum()*1.0 / has_planet.sum()*1.0))
+		print("\nNumber of detectable transiting planets: " + str(num_detectable*2))
+		print("Percentage of detectable planets from transiting planets: " + str(num_detectable/has_transit.sum()))
  	
 if plot_hist:
 	# PLots for all the planets
