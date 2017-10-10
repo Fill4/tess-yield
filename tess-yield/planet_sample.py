@@ -18,7 +18,7 @@ G = 6.6743e-8
 verbose 					= 1
 
 planet_seeding 				= 1
-plot_hist 					= 0
+plot_hist 					= 1
 plot_result_distribution	= 0
 build_csv					= 0
 write_output				= 0
@@ -31,7 +31,7 @@ if planet_seeding:
 	_, _, _, mass, radius, teff, logg, observed_days = np.loadtxt("data/star_sample.dat", unpack=True)
 
 	# Rates
-	planet_rate = 0.01
+	planet_rate = 0.1
 	min_n_transits = 2
 
 	# Parameter definition for building csv data
@@ -136,6 +136,7 @@ if planet_seeding:
 	#---------------------------------------------------------
 
 	if verbose:
+		print("\nPlanet rate of " + str(planet_rate*100) + "%")
 		print("\nNumber of stars with seeded planets: " + str(has_planet.sum() * 2))
 		print("Percentage of stars with seeded planets: " + str(has_planet.sum()*1.0 / mass.size))
 		print("\nNumber of stars with transiting planets: " + str(has_transit.sum() * 2))
@@ -146,14 +147,14 @@ if planet_seeding:
 if plot_hist:
 	# PLots for all the planets
 	plt.figure(1, figsize=(24,16), dpi=100)
-	plt.hist(planet_radius, bins=20, normed=1)
+	plt.hist(planet_radius, bins=20, normed=1, alpha=0.6)
 	plt.xlabel(r"Planet Radius [$R_\oplus$]", fontsize=24)
 	plt.ylabel(r"Frequency", fontsize=24)
 	plt.tick_params(labelsize=24)
 	plt.savefig("figures/" + "all_planet_radius_scale={:}.png".format(scale))
 
 	plt.figure(2, figsize=(24,16), dpi=100)
-	plt.hist(period, range=[0, 100], bins=40, normed=1)
+	plt.hist(period, range=[0, 100], bins=40, normed=1, alpha=0.6)
 	plt.xlabel(r"Planet Period [days]", fontsize=24)
 	plt.ylabel(r"Frequency", fontsize=24)
 	plt.tick_params(labelsize=24)
@@ -169,14 +170,14 @@ if plot_hist:
 
 	# Plots for transiting planets
 	plt.figure(4, figsize=(24,16), dpi=100)
-	plt.hist(planet_radius[has_transit][has_min_transits], bins=20, normed=1)
+	plt.hist(planet_radius[has_transit][has_min_transits], bins=20, normed=1, alpha=0.6)
 	plt.xlabel(r"Planet Radius [$R_\oplus$]", fontsize=24)
 	plt.ylabel(r"Frequency", fontsize=24)
 	plt.tick_params(labelsize=24)
 	plt.savefig("figures/" + "transit_planet_radius_scale={:}.png".format(scale))
 
 	plt.figure(5, figsize=(24,16), dpi=100)
-	plt.hist(period[has_transit][has_min_transits], range=[0, 100], bins=40, normed=1)
+	plt.hist(period[has_transit][has_min_transits], range=[0, 100], bins=40, normed=1, alpha=0.6)
 	plt.xlabel(r"Planet Period [days]", fontsize=24)
 	plt.ylabel(r"Frequency", fontsize=24)
 	plt.tick_params(labelsize=24)
@@ -191,7 +192,7 @@ if plot_hist:
 	plt.savefig("figures/" + "transit_period_radius.png")
 	
 	plt.figure(7, figsize=(24,16), dpi=100)
-	plt.hist(t_duration, bins=20, normed=1)
+	plt.hist(t_duration, bins=20, normed=1, alpha=0.6)
 	plt.xlabel(r"Transit Duration [hours]", fontsize=24)
 	plt.ylabel(r"Frequency", fontsize=24)
 	plt.tick_params(labelsize=24)
@@ -200,10 +201,10 @@ if plot_hist:
 	plt.figure(8, figsize=(24,16), dpi=100)
 	plt.scatter(logg[has_planet][has_transit][has_min_transits][is_detectable], 
 		(planet_radius[has_transit][has_min_transits][is_detectable]*Rearth) / Rmin[is_detectable], 
-		s=25, color='red', label="Detectable")
+		s=10, color='red', label="Detectable")
 	plt.scatter(logg[has_planet][has_transit][has_min_transits][~is_detectable], 
 		(planet_radius[has_transit][has_min_transits][~is_detectable]*Rearth) / Rmin[~is_detectable], 
-		s=25, color='blue', label="Not detectable")
+		s=10, color='blue', label="Not detectable")
 	plt.xlabel(r"log $g$ (g $cm^{-2}$)", fontsize=24)
 	plt.ylabel(r"$R_{p}$ / $R_{min}$", fontsize=24)
 	plt.tick_params(labelsize=24)
