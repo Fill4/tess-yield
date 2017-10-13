@@ -12,14 +12,11 @@ from despyastro.coords import *
 Msun = 1.989e33
 Rsun = 6.955e10
 Mearth = 5.974e27
-Rearth = 6.378e8
+Rearth = 7.478e8
 G = 6.6743e-8
 
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
-
-# load simulation
-
 
 # Selects LLRGB stars south of the ecliptic that will be observed with TESS
 def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
@@ -51,6 +48,8 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 
 	ec_lon = ec_lon[llrgb_south_mask]
 	ec_lat = ec_lat[llrgb_south_mask]
+	g_lon = g_lon[llrgb_south_mask]
+	g_lat = g_lat[llrgb_south_mask]
 
 	# Convert to equatorial
 	ra, dec = ec2eq(ec_lon, ec_lat)
@@ -67,15 +66,32 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 	med_sec = med_sec[med_mask]
 	ra = ra[med_mask]
 	dec = dec[med_mask]
+	ec_lon = ec_lon[med_mask]
+	ec_lat = ec_lat[med_mask]
+	g_lon = g_lon[med_mask]
+	g_lat = g_lat[med_mask]
+
 
 	mass = galaxia["mact"][sample_index]
 	teff = 10**(galaxia["teff"][sample_index])
+	age = galaxia["age"][sample_index]
+	lum = galaxia["lum"][sample_index]
 	logg = galaxia["grav"][sample_index]
 	radius = np.sqrt(G * mass * Msun / 10**logg) / Rsun
 	observed_days = med_sec.astype(int) * 27.4
 
+	ubv_u = galaxia["ubv_u"][sample_index]
+	ubv_b = galaxia["ubv_b"][sample_index]
+	ubv_v = galaxia["ubv_v"][sample_index]
+	ubv_r = galaxia["ubv_r"][sample_index]
+	ubv_i = galaxia["ubv_i"][sample_index]
+	ubv_j = galaxia["ubv_j"][sample_index]
+	ubv_h = galaxia["ubv_h"][sample_index]
+	ubv_k = galaxia["ubv_k"][sample_index]
+
 	# Join data in a matrix
-	data = np.column_stack((sample_index, ra, dec, mass, radius, teff, logg, observed_days))
+	data = np.column_stack((sample_index, g_lon, g_lat, ec_lon, ec_lat, ra, dec, mass, radius, age, lum, teff, logg, 
+		observed_days, ubv_u, ubv_b, ubv_v, ubv_r, ubv_i, ubv_j, ubv_h, ubv_k))
 
 	# Generate header and save all data to file
 	header =  "Data from the complete star file, including the factor of 2 correction \n"
@@ -83,19 +99,27 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 	header += "{:}{:}\n".format("Total number of llrgb stars: ", num_llrgb)
 	header += "{:}{:}\n".format("Total number of llrgb stars south of the ecliptic: ", num_llrgb_south)
 	header += "{:}{:}\n\n".format("Total number of llrgb stars south of the ecliptic, observable by TESS: ", num_sample)
-	header += "{:5}{:>10}{:>10}{:>10}{:>10}{:>13}{:>10}{:>7}".format("Index", "Ra", "Dec", "Mass", "Radius", "Teff", "Logg", "Days")
+	header += "{:5}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>13}{:>10}{:>7}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}".format(
+		"Index", "Gal_Lon", "Gal_Lat", "Ec_Lon", "Ec_Lat", "Ra", "Dec", "Mass", "Radius", "Age", "Lum", "Teff", 
+		"Logg", "Days", "uvb_u", "uvb_b", "uvb_v", "uvb_r", "uvb_i", "uvb_j", "uvb_h", "uvb_k", )
 	
+	"""
 	if os.path.exists("data/star_sample.dat"):
 		while True:
-		entry = input("Overwrite star_sample.dat file? [y/n]")
-		if entry.lower() == "y" or entry.lower() == "yes":
-			np.savetxt("data/star_sample.dat", data, fmt='%7d %9.4f %9.4f %9.4f %9.4f %12.4f %9.4f %6.1f', header=header)
-			break
-		elif entry.lower() == "n" or entry.lower() == "no":
-			break
-		else:
-			print("Please input y or n")
+			entry = input("Overwrite star_sample.dat file? [y/n]")
+			if entry.lower() == "y" or entry.lower() == "yes":
+				txtformat = '%7d %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %12.4f %9.4f %6.1f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f'
+				np.savetxt("data/star_sample.dat", data, fmt=txtformat, header=header)
+				break
+			elif entry.lower() == "n" or entry.lower() == "no":
+				break
+			else:
+				print("Please input y or n")
+				continue
+	"""
 
+	txtformat = '%7d %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %12.4f %9.4f %6.1f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f'
+	np.savetxt("data/star_sample_2.dat", data, fmt=txtformat, header=header)
 
 	"""
 	# convert to apparent mag and apply reddening
@@ -104,9 +128,6 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 	plt.hist(galaxia['ubv_i'],bins=100)
 	plt.show()
 	"""
-
-def complete_pop_file():
-	pass
 
 def plot_hr():
 	galaxia = ebf.read('data/tess.ebf','/')
