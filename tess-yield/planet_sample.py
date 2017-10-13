@@ -14,25 +14,12 @@ Mearth = 5.974e27
 Rearth = 6.378e8
 G = 6.6743e-8
 
-# Execution flags
-verbose 					= 1
-
-planet_seeding 				= 1
-plot_hist 					= 1
-plot_result_distribution	= 0
-build_csv					= 0
-write_output				= 0
-
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
 
-if planet_seeding:
+def planet_seeding(planet_rate, min_n_transits = 2, write_output = 0, build_csv = 0):
 	# -------- Planet Seeding ------------
 	_, _, _, mass, radius, teff, logg, observed_days = np.loadtxt("data/star_sample.dat", unpack=True)
-
-	# Rates
-	planet_rate = 0.1
-	min_n_transits = 2
 
 	# Parameter definition for building csv data
 	if build_csv:
@@ -135,16 +122,15 @@ if planet_seeding:
 
 	#---------------------------------------------------------
 
-	if verbose:
-		print("\nPlanet rate of " + str(planet_rate*100) + "%")
-		print("\nNumber of stars with seeded planets: " + str(has_planet.sum() * 2))
-		print("Percentage of stars with seeded planets: " + str(has_planet.sum()*1.0 / mass.size))
-		print("\nNumber of stars with transiting planets: " + str(has_transit.sum() * 2))
-		print("Percentage of transiting planets from seeded planets: " + str(has_transit.sum()*1.0 / has_planet.sum()*1.0))
-		print("\nNumber of detectable transiting planets: " + str(num_detectable*2))
-		print("Percentage of detectable planets from transiting planets: " + str(num_detectable/has_transit.sum()))
+	vprint("\nPlanet rate of " + str(planet_rate*100) + "%")
+	vprint("\nNumber of stars with seeded planets: " + str(has_planet.sum() * 2))
+	vprint("Percentage of stars with seeded planets: " + str(has_planet.sum()*1.0 / mass.size))
+	vprint("\nNumber of stars with transiting planets: " + str(has_transit.sum() * 2))
+	vprint("Percentage of transiting planets from seeded planets: " + str(has_transit.sum()*1.0 / has_planet.sum()*1.0))
+	vprint("\nNumber of detectable transiting planets: " + str(num_detectable*2))
+	vprint("Percentage of detectable planets from transiting planets: " + str(num_detectable/has_transit.sum()))
  	
-if plot_hist:
+def plot_hist():
 	# PLots for all the planets
 	plt.figure(1, figsize=(24,16), dpi=100)
 	plt.hist(planet_radius, bins=20, normed=1, alpha=0.6)
@@ -211,13 +197,17 @@ if plot_hist:
 	plt.legend(fontsize=24)
 	plt.savefig("figures/" + "rmin_logg.png")
 
-if plot_result_distribution:
-	planet_rates = [0.1, 0.05, 0.01]
+	plt.close("all")
+
+def plot_result_hist(planet_rates):
 	print_top = 1
 	for rate in planet_rates:
-		planets, transits, detections = np.loadtxt("data/planet_rate_"+str(rate)+".dat", unpack=True)
+		try:
+			planets, transits, detections = np.loadtxt("data/planet_rate_"+str(rate)+".dat", unpack=True)
+		except NameError:
+			print("No result file with rate {:}".format(rate))
+			continue
 
-		
 		plt.figure(10, figsize=(24,18), dpi=100)
 		plt.hist(planets, bins=20, normed=1, alpha=0.6, label="Planet rate - "+str(int(rate*100))+"%")
 		plt.xlabel(r"Number of planets seeded", fontsize=24)
@@ -252,8 +242,7 @@ if plot_result_distribution:
 		plt.close("all")
 		
 		if print_top:
-			print("{:^11} | {:^11} | {:^11}".format("Planet rate", "Median", "Std. Dev."))
+			vprint("{:^11} | {:^11} | {:^11}".format("Planet rate", "Median", "Std. Dev."))
 			print_top = 0
-		print("{:^11}   {:^11.1f}   {:^11.4f}".format(str(int(rate*100)) + " %", np.median(detections), np.std(detections)))
+		vprint("{:^11}   {:^11.1f}   {:^11.4f}".format(str(int(rate*100)) + " %", np.median(detections), np.std(detections)))
 
-plt.close("all")

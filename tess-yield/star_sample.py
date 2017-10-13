@@ -4,10 +4,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import ebf
-import sys
+import sys, os
 import tvguide
 from despyastro.coords import *
-
 
 #Define constant variables
 Msun = 1.989e33
@@ -16,28 +15,17 @@ Mearth = 5.974e27
 Rearth = 6.378e8
 G = 6.6743e-8
 
-# Execution flags
-verbose 					= 0
-
-star_population 			= 0
-plot_hr 					= 0
-
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
 
 # load simulation
-galaxia = ebf.read('data/tess.ebf','/')
-num_stars = galaxia["teff"].size*2
 
-# Define llrgb cuts
-teff_lower = 0
-teff_upper = 5500
-logg_lower = 2.5
-logg_upper = 3.5
 
 # Selects LLRGB stars south of the ecliptic that will be observed with TESS
-if star_population:
+def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 	# -------- Synthetic stellar population ------------
+	galaxia = ebf.read('data/tess.ebf','/')
+	num_stars = galaxia["teff"].size*2
 
 	# Cut in Teff
 	teff_cut = 10**galaxia["teff"] < teff_upper
@@ -63,7 +51,6 @@ if star_population:
 
 	ec_lon = ec_lon[llrgb_south_mask]
 	ec_lat = ec_lat[llrgb_south_mask]
-
 
 	# Convert to equatorial
 	ra, dec = ec2eq(ec_lon, ec_lat)
@@ -98,7 +85,17 @@ if star_population:
 	header += "{:}{:}\n\n".format("Total number of llrgb stars south of the ecliptic, observable by TESS: ", num_sample)
 	header += "{:5}{:>10}{:>10}{:>10}{:>10}{:>13}{:>10}{:>7}".format("Index", "Ra", "Dec", "Mass", "Radius", "Teff", "Logg", "Days")
 	
-	np.savetxt("data/star_sample.dat", data, fmt='%7d %9.4f %9.4f %9.4f %9.4f %12.4f %9.4f %6.1f', header=header)
+	if os.path.exists("data/star_sample.dat"):
+		while True:
+		entry = input("Overwrite star_sample.dat file? [y/n]")
+		if entry.lower() == "y" or entry.lower() == "yes":
+			np.savetxt("data/star_sample.dat", data, fmt='%7d %9.4f %9.4f %9.4f %9.4f %12.4f %9.4f %6.1f', header=header)
+			break
+		elif entry.lower() == "n" or entry.lower() == "no":
+			break
+		else:
+			print("Please input y or n")
+
 
 	"""
 	# convert to apparent mag and apply reddening
@@ -108,7 +105,13 @@ if star_population:
 	plt.show()
 	"""
 
-if plot_hr:
+def complete_pop_file():
+	pass
+
+def plot_hr():
+	galaxia = ebf.read('data/tess.ebf','/')
+	num_stars = galaxia["teff"].size*2
+
 	# Cut in Teff
 	teff_cut = 10**galaxia["teff"] < teff_upper
 	# Cut in Logg
@@ -126,3 +129,5 @@ if plot_hr:
 	plt.ylabel(r"log $g$ (g $cm^{-2}$)", fontsize=24)
 	plt.tick_params(labelsize=24)
 	plt.savefig("figures/" + "hr_diagram.png")
+
+	plt.close("all")
