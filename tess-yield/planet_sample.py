@@ -17,7 +17,7 @@ G = 6.6743e-8
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
 
-def planet_seeding(planet_rate, min_n_transits = 2, write_output = 0, build_csv = 0):
+def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, plot_hist=0, verbose=0):
 	# -------- Planet Seeding ------------
 	_, _, _, mass, radius, teff, logg, observed_days = np.loadtxt("data/star_sample.dat", unpack=True)
 
@@ -105,6 +105,12 @@ def planet_seeding(planet_rate, min_n_transits = 2, write_output = 0, build_csv 
 	is_detectable = Rmin < (planet_radius[has_transit][has_min_transits] * Rearth)
 	num_detectable = is_detectable.sum()
 
+	# Writes the number of planets seeded, with transits and detected into a file
+	if write_output:
+		with open("data/planet_rate_" + str(planet_rate) + ".dat", "a") as f:
+			f.write("{:9d}   {:8d}   {:10d}\n".format(has_planet.sum() * 2, has_transit.sum() * 2, num_detectable * 2))
+	
+	# Only called when building the csv file to compute the detectability plot
 	if build_csv:
 		data = np.column_stack((mass[has_planet][has_transit][has_min_transits], radius[has_planet][has_transit][has_min_transits], 
 								teff[has_planet][has_transit][has_min_transits], logg[has_planet][has_transit][has_min_transits], 
@@ -116,20 +122,19 @@ def planet_seeding(planet_rate, min_n_transits = 2, write_output = 0, build_csv 
 		
 		np.savetxt("data/planet_sample.csv", data, fmt='%.4f,%.4f,%.4f,%.4f,%.1f,%.4f,%.4f,%.4f,%.10f,%.5f', header=header)
 
-	if write_output:
-		with open("data/planet_rate_" + str(planet_rate) + ".dat", "a") as f:
-			f.write("{:9d}   {:8d}   {:10d}\n".format(has_planet.sum() * 2, has_transit.sum() * 2, num_detectable * 2))
+	if verbose:
+		print("\nPlanet rate of " + str(planet_rate*100) + "%")
+		print("\nNumber of stars with seeded planets: " + str(has_planet.sum() * 2))
+		print("Percentage of stars with seeded planets: " + str(has_planet.sum()*1.0 / mass.size))
+		print("\nNumber of stars with transiting planets: " + str(has_transit.sum() * 2))
+		print("Percentage of transiting planets from seeded planets: " + str(has_transit.sum()*1.0 / has_planet.sum()*1.0))
+		print("\nNumber of detectable transiting planets: " + str(num_detectable*2))
+		print("Percentage of detectable planets from transiting planets: " + str(num_detectable/has_transit.sum()))
 
-	#---------------------------------------------------------
-
-	vprint("\nPlanet rate of " + str(planet_rate*100) + "%")
-	vprint("\nNumber of stars with seeded planets: " + str(has_planet.sum() * 2))
-	vprint("Percentage of stars with seeded planets: " + str(has_planet.sum()*1.0 / mass.size))
-	vprint("\nNumber of stars with transiting planets: " + str(has_transit.sum() * 2))
-	vprint("Percentage of transiting planets from seeded planets: " + str(has_transit.sum()*1.0 / has_planet.sum()*1.0))
-	vprint("\nNumber of detectable transiting planets: " + str(num_detectable*2))
-	vprint("Percentage of detectable planets from transiting planets: " + str(num_detectable/has_transit.sum()))
+	if plot_hist:
+		plot_hist()
  	
+# Plots the distributions (planet_radius, period) for the last run of planet seeding
 def plot_hist():
 	# PLots for all the planets
 	plt.figure(1, figsize=(24,16), dpi=100)
@@ -199,6 +204,7 @@ def plot_hist():
 
 	plt.close("all")
 
+# Plots the histograms for the distribution of results from the multiple runs of planet seeding
 def plot_result_hist(planet_rates):
 	print_top = 1
 	for rate in planet_rates:
@@ -241,8 +247,21 @@ def plot_result_hist(planet_rates):
 
 		plt.close("all")
 		
-		if print_top:
-			vprint("{:^11} | {:^11} | {:^11}".format("Planet rate", "Median", "Std. Dev."))
-			print_top = 0
-		vprint("{:^11}   {:^11.1f}   {:^11.4f}".format(str(int(rate*100)) + " %", np.median(detections), np.std(detections)))
+		if verbose:
+			if print_top:
+				print("{:^11} | {:^11} | {:^11}".format("Planet rate", "Median", "Std. Dev."))
+				print_top = 0
+			print("{:^11}   {:^11.1f}   {:^11.4f}".format(str(int(rate*100)) + " %", np.median(detections), np.std(detections)))
 
+# Runs miltiple times the planet seeding routine for diferent rates and saves the results in a file
+# Then it plots the histograms of those results
+def multi_seeding(planet_rates, num_iter=300):
+	for rate in planet_rates:
+		for i in range(num_iter):
+			planet_seeding(planet_rate=rate, write_output=True)
+			print("Iterations {:}/{:}".format(i+1, num_iter), end="\r", flush=True)
+	plot_result_hist()
+
+if __name__ == "__main__":
+	planet_rates = [0.1, 0.05, 0.01]
+	multi_seeding(planet_rates)

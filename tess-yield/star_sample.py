@@ -62,7 +62,7 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 	sample_index = llrgb_south_index[med_mask]
 	num_sample = sample_index.size*2
 	
-	# Ge data for all stars in sample
+	# Get data for all stars in sample
 	med_sec = med_sec[med_mask]
 	ra = ra[med_mask]
 	dec = dec[med_mask]
@@ -93,7 +93,7 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 	data = np.column_stack((sample_index, g_lon, g_lat, ec_lon, ec_lat, ra, dec, mass, radius, age, lum, teff, logg, 
 		observed_days, ubv_u, ubv_b, ubv_v, ubv_r, ubv_i, ubv_j, ubv_h, ubv_k))
 
-	# Generate header and save all data to file
+	# Generate header
 	header =  "Data from the complete star file, including the factor of 2 correction \n"
 	header += "{:}{:}\n".format("Total number of stars: ", num_stars)
 	header += "{:}{:}\n".format("Total number of llrgb stars: ", num_llrgb)
@@ -103,7 +103,7 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 		"Index", "Gal_Lon", "Gal_Lat", "Ec_Lon", "Ec_Lat", "Ra", "Dec", "Mass", "Radius", "Age", "Lum", "Teff", 
 		"Logg", "Days", "uvb_u", "uvb_b", "uvb_v", "uvb_r", "uvb_i", "uvb_j", "uvb_h", "uvb_k", )
 	
-	"""
+	# Save data to file. Prompt for overwrite if file exists
 	if os.path.exists("data/star_sample.dat"):
 		while True:
 			entry = input("Overwrite star_sample.dat file? [y/n]")
@@ -116,10 +116,6 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 			else:
 				print("Please input y or n")
 				continue
-	"""
-
-	txtformat = '%7d %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %12.4f %9.4f %6.1f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f'
-	np.savetxt("data/star_sample_2.dat", data, fmt=txtformat, header=header)
 
 	"""
 	# convert to apparent mag and apply reddening
@@ -141,6 +137,7 @@ def plot_hr():
 	llrgb_mask = np.logical_and(teff_cut, logg_cut)
 	non_llrgb_mask = np.invert(llrgb_mask)
 
+	# Plot HR diagram of all the stars in the simulation with the selected ones highlighted
 	plt.figure(9, figsize=(24,18), dpi=100)
 	plt.scatter(galaxia["teff"][non_llrgb_mask][1::500], galaxia["grav"][non_llrgb_mask][1::500], s=2, color="blue")
 	plt.scatter(galaxia["teff"][llrgb_mask][1::500], galaxia["grav"][llrgb_mask][1::500], s=2, color="red")
@@ -152,3 +149,7 @@ def plot_hr():
 	plt.savefig("figures/" + "hr_diagram.png")
 
 	plt.close("all")
+
+if __name__ == "__main__":
+	star_population()
+	#plot_hr()
