@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 import scipy.stats as stats
+import TASC_detection_recipe as mat_script
 
 
 #Define constant variables
@@ -19,7 +20,8 @@ G = 6.6743e-8
 
 def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, plot_hist=0, verbose=0):
 	# -------- Planet Seeding ------------
-	_, _, _, mass, radius, teff, logg, observed_days = np.loadtxt("data/star_sample.dat", unpack=True)
+	(sample_index, g_lon, g_lat, ec_lon, ec_lat, ra, dec, mass, radius, age, lum, teff, logg, feh, observed_days, 
+	ubv_u, ubv_b, ubv_v, ubv_r, ubv_i, ubv_j, ubv_h, ubv_k) = np.loadtxt("data/star_sample_complete.dat", unpack=True)
 
 	# Parameter definition for building csv data
 	if build_csv:
@@ -94,14 +96,20 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 	# Determine the rms for the planets transit by interpolating the res values
 	rms = np.array([np.interp(t_duration[has_min_transits][i]/24.0, tdurs, res[:,i]) for i in range(t_duration[has_min_transits].size)])
 	
+	# Determine shot noise - NEED TO ADD MASKS AND FIX UNITS
+	shotnoise = mat_script.calc_noise(ubv_i, observed_days, teff, ec_lon, ec_lat, g_lon, g_lat)
+
+	# Add noise in quadrature
+	noise = np.sqrt(rms**2 + shotnoise**2)
+
 	# Signal to noise ratio
 	if build_csv:
-		SNR = (t_depth[has_min_transits] / (rms)) * np.sqrt(n_transits[has_min_transits])
+		SNR = (t_depth[has_min_transits] / (noise)) * np.sqrt(n_transits[has_min_transits])
 	else:
 		SNR = 10
 
 	# Calculate minimum detectable radius
-	Rmin = radius[has_planet][has_transit][has_min_transits]*Rsun * ((SNR * rms)**0.5) * (n_transits[has_min_transits]**(-1.0/4))
+	Rmin = radius[has_planet][has_transit][has_min_transits]*Rsun * ((SNR * noise)**0.5) * (n_transits[has_min_transits]**(-1.0/4))
 	is_detectable = Rmin < (planet_radius[has_transit][has_min_transits] * Rearth)
 	num_detectable = is_detectable.sum()
 
@@ -115,10 +123,10 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 		data = np.column_stack((mass[has_planet][has_transit][has_min_transits], radius[has_planet][has_transit][has_min_transits], 
 								teff[has_planet][has_transit][has_min_transits], logg[has_planet][has_transit][has_min_transits], 
 								observed_days[has_planet][has_transit][has_min_transits], period[has_transit][has_min_transits], 
-								planet_radius[has_transit][has_min_transits], t_duration[has_min_transits], rms, SNR))
+								planet_radius[has_transit][has_min_transits], t_duration[has_min_transits], noise, SNR))
 
 		header = "Columns:\n{:} - {:} - {:} - {:} - {:} -\n{:} - {:} - {:} - {:} - {:}\n".format("Star Mass (Msun)", "Star Radius (Rsun)", "Teff (K)", 
-				"Log(g) (cm s-2)", "Obs time (days)", "Planet Period (days)", "Planet Radius (Rearth)", "Transit duration (hours)", "sigma", "SNR")
+				"Log(g) (cm s-2)", "Obs time (days)", "Planet Period (days)", "Planet Radius (Rearth)", "Transit duration (hours)", "Noise", "SNR")
 		
 		np.savetxt("data/planet_sample.csv", data, fmt='%.4f,%.4f,%.4f,%.4f,%.1f,%.4f,%.4f,%.4f,%.10f,%.5f', header=header)
 

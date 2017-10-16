@@ -74,6 +74,7 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 
 	mass = galaxia["mact"][sample_index]
 	teff = 10**(galaxia["teff"][sample_index])
+	feh = galaxia["feh"][sample_index]
 	age = galaxia["age"][sample_index]
 	lum = galaxia["lum"][sample_index]
 	logg = galaxia["grav"][sample_index]
@@ -90,7 +91,7 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 	ubv_k = galaxia["ubv_k"][sample_index]
 
 	# Join data in a matrix
-	data = np.column_stack((sample_index, g_lon, g_lat, ec_lon, ec_lat, ra, dec, mass, radius, age, lum, teff, logg, 
+	data = np.column_stack((sample_index, g_lon, g_lat, ec_lon, ec_lat, ra, dec, mass, radius, age, lum, teff, logg, feh
 		observed_days, ubv_u, ubv_b, ubv_v, ubv_r, ubv_i, ubv_j, ubv_h, ubv_k))
 
 	# Generate header
@@ -99,9 +100,9 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 	header += "{:}{:}\n".format("Total number of llrgb stars: ", num_llrgb)
 	header += "{:}{:}\n".format("Total number of llrgb stars south of the ecliptic: ", num_llrgb_south)
 	header += "{:}{:}\n\n".format("Total number of llrgb stars south of the ecliptic, observable by TESS: ", num_sample)
-	header += "{:5}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>13}{:>10}{:>7}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}".format(
+	header += "{:5}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>13}{:>10}{:>10}{:>7}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}".format(
 		"Index", "Gal_Lon", "Gal_Lat", "Ec_Lon", "Ec_Lat", "Ra", "Dec", "Mass", "Radius", "Age", "Lum", "Teff", 
-		"Logg", "Days", "uvb_u", "uvb_b", "uvb_v", "uvb_r", "uvb_i", "uvb_j", "uvb_h", "uvb_k", )
+		"Logg", "FeH", "Days", "uvb_u", "uvb_b", "uvb_v", "uvb_r", "uvb_i", "uvb_j", "uvb_h", "uvb_k", )
 	
 	# Save data to file. Prompt for overwrite if file exists
 	if os.path.exists("data/star_sample.dat"):
