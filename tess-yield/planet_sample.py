@@ -105,7 +105,8 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 	rms = np.array([np.interp(t_duration[has_min_transits][i]/24.0, tdurs, res[:,i]) for i in range(t_duration[has_min_transits].size)])
 	
 	# Determine shot noise - NEED TO ADD MASKS AND FIX UNITS
-	shotnoise = mat_script.calc_noise(ubv_i, observed_days, teff, ec_lon, ec_lat, g_lon, g_lat)
+	_, _, _, npix_aper = mat_script.pixel_cost(ubv_i)
+	shotnoise = mat_script.calc_noise(ubv_i, 1800, teff, ec_lon, ec_lat, g_lon, g_lat, npix_aper=npix_aper)
 
 	# Add noise in quadrature
 	noise = np.sqrt(rms**2 + shotnoise**2)
