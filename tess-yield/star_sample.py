@@ -94,7 +94,7 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 	data = np.column_stack((sample_index, g_lon, g_lat, ec_lon, ec_lat, ra, dec, mass, radius, age, lum, teff, logg, feh
 		observed_days, ubv_u, ubv_b, ubv_v, ubv_r, ubv_i, ubv_j, ubv_h, ubv_k))
 
-	# Generate header
+	# Generate file header
 	header =  "Data from the complete star file, including the factor of 2 correction \n"
 	header += "{:}{:}\n".format("Total number of stars: ", num_stars)
 	header += "{:}{:}\n".format("Total number of llrgb stars: ", num_llrgb)
@@ -150,6 +150,7 @@ def plot_hr():
 	plt.savefig("figures/" + "hr_diagram.png")
 
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	star_population()

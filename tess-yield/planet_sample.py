@@ -19,7 +19,11 @@ G = 6.6743e-8
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
 
 def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, plot_hist=0, verbose=0):
-	# -------- Planet Seeding ------------
+	
+	# -------------------------------------------
+	# ------------ Planet Seeding ---------------
+	# -------------------------------------------
+
 	(sample_index, g_lon, g_lat, ec_lon, ec_lat, ra, dec, mass, radius, age, lum, teff, logg, feh, observed_days, 
 	ubv_u, ubv_b, ubv_v, ubv_r, ubv_i, ubv_j, ubv_h, ubv_k) = np.loadtxt("data/star_sample_complete.dat", unpack=True)
 
@@ -28,7 +32,7 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 		planet_rate = 1.0
 		min_n_transits = 2
 
-	# Seed planet
+	# Seed planet according to planet rate
 	has_planet = np.random.uniform(0.0, 1.0, mass.size) < planet_rate
 
 	# Planet radius distribution
@@ -42,6 +46,7 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 	roche 			= np.zeros(has_planet.sum())
 	a 				= np.zeros(has_planet.sum())
 
+	# Loop that samples periods and radius for the seeded planets until all values are physically consistent
 	invalid_planets = np.ones(has_planet.sum(), dtype=bool)
 	while np.any(invalid_planets):
 		# Draw period samples (in days from a lognormal distribution. Values from Thomas North)
@@ -87,7 +92,10 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 	# Choose planets that transit more than 2 times
 	has_min_transits = n_transits >= min_n_transits
 
+	# -------------------------------------------
 	# -------- Transit Detectability ------------
+	# -------------------------------------------
+
 	# Use Dan Huber's method to determine rms values for a star's logg for various predefined transit durations
 	coeffs = np.loadtxt("data/noisecoeffs.dat", unpack=True)
 	tdurs = np.array([0.1,0.5,1.0,1.5,2.0,2.5])
@@ -113,6 +121,10 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 	is_detectable = Rmin < (planet_radius[has_transit][has_min_transits] * Rearth)
 	num_detectable = is_detectable.sum()
 
+	# -------------------------------------------
+	# ------------- Handle Results --------------
+	# -------------------------------------------
+
 	# Writes the number of planets seeded, with transits and detected into a file
 	if write_output:
 		with open("data/planet_rate_" + str(planet_rate) + ".dat", "a") as f:
@@ -130,6 +142,7 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 		
 		np.savetxt("data/planet_sample.csv", data, fmt='%.4f,%.4f,%.4f,%.4f,%.1f,%.4f,%.4f,%.4f,%.10f,%.5f', header=header)
 
+	# ----------------------------------------------
 	if verbose:
 		print("\nPlanet rate of " + str(planet_rate*100) + "%")
 		print("\nNumber of stars with seeded planets: " + str(has_planet.sum() * 2))
@@ -139,6 +152,7 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 		print("\nNumber of detectable transiting planets: " + str(num_detectable*2))
 		print("Percentage of detectable planets from transiting planets: " + str(num_detectable/has_transit.sum()))
 
+	# ----------------------------------------------
 	if plot_hist:
 		plot_hist()
  	
@@ -269,6 +283,7 @@ def multi_seeding(planet_rates, num_iter=300):
 			planet_seeding(planet_rate=rate, write_output=True)
 			print("Iterations {:}/{:}".format(i+1, num_iter), end="\r", flush=True)
 	plot_result_hist()
+
 
 if __name__ == "__main__":
 	planet_rates = [0.1, 0.05, 0.01]
