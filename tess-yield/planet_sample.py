@@ -104,9 +104,12 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 	# Determine the rms for the planets transit by interpolating the res values
 	rms = np.array([np.interp(t_duration[has_min_transits][i]/24.0, tdurs, res[:,i]) for i in range(t_duration[has_min_transits].size)])
 	
-	# Determine shot noise - NEED TO ADD MASKS AND FIX UNITS
-	_, _, _, npix_aper = mat_script.pixel_cost(ubv_i)
-	shotnoise = mat_script.calc_noise(ubv_i, 1800, teff, ec_lon, ec_lat, g_lon, g_lat, npix_aper=npix_aper)
+	# Determine shot noise
+	_, _, _, npix_aper = mat_script.pixel_cost(ubv_i[has_planet][has_transit][has_min_transits])
+	shotnoise = mat_script.calc_noise(ubv_i[has_planet][has_transit][has_min_transits], 1800, 
+		teff[has_planet][has_transit][has_min_transits], ec_lon[has_planet][has_transit][has_min_transits], 
+		ec_lat[has_planet][has_transit][has_min_transits], g_lon[has_planet][has_transit][has_min_transits], 
+		g_lat[has_planet][has_transit][has_min_transits], npix_aper=npix_aper)
 
 	# Add noise in quadrature
 	noise = np.sqrt(rms**2 + shotnoise**2)
@@ -150,7 +153,9 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 		print("Percentage of stars with seeded planets: " + str(has_planet.sum()*1.0 / mass.size))
 		print("\nNumber of stars with transiting planets: " + str(has_transit.sum() * 2))
 		print("Percentage of transiting planets from seeded planets: " + str(has_transit.sum()*1.0 / has_planet.sum()*1.0))
-		print("\nNumber of detectable transiting planets: " + str(num_detectable*2))
+		print("\nNumber of planets with at least 2 transits: " + str(has_min_transits.sum()*2))
+		print("Percentage of transiting planets with at least 2 transits: " + str(has_min_transits.sum()*1.0 / has_transit.sum()*1.0))
+		print("\nNumber of detectable planets: " + str(num_detectable))
 		print("Percentage of detectable planets from transiting planets: " + str(num_detectable/has_transit.sum()))
 
 	# ----------------------------------------------
@@ -287,5 +292,6 @@ def multi_seeding(planet_rates, num_iter=300):
 
 
 if __name__ == "__main__":
-	planet_rates = [0.1, 0.05, 0.01]
-	multi_seeding(planet_rates)
+	#planet_rates = [0.1, 0.05, 0.01]
+	#multi_seeding(planet_rates)
+	planet_seeding(0.01, verbose=1)
