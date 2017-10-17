@@ -6,6 +6,7 @@ import numpy as np
 import ebf
 import sys, os
 import tvguide
+import gxutil
 from despyastro.coords import *
 
 #Define constant variables
@@ -19,10 +20,14 @@ G = 6.6743e-8
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
 
 # Selects LLRGB stars south of the ecliptic that will be observed with TESS
-def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
+def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5, pop_multi=10):
 	# -------- Synthetic stellar population ------------
 	galaxia = ebf.read('data/tess.ebf','/')
-	num_stars = galaxia["teff"].size*2
+	num_stars = galaxia["teff"].size*pop_multi
+	
+	# Convert magnitudes to apparent mag and apply reddening
+	gxutil.abs2app(galaxia,corr=True)
+	sys.exit()
 
 	# Cut in Teff
 	teff_cut = 10**galaxia["teff"] < teff_upper
@@ -32,7 +37,7 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 	llrgb_mask = np.logical_and(teff_cut, logg_cut)
 	non_llrgb_mask = np.invert(llrgb_mask)
 	llrgb_index = np.where(llrgb_mask)[0]
-	num_llrgb = llrgb_index.size*2
+	num_llrgb = llrgb_index.size*pop_multi
 
 	# Get galactic coords
 	g_lon = galaxia["glon"][llrgb_mask]
@@ -44,7 +49,7 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 	# Select from south ecliptic pole
 	llrgb_south_mask = ec_lat < 0
 	llrgb_south_index = llrgb_index[llrgb_south_mask]
-	num_llrgb_south = llrgb_south_index.size*2
+	num_llrgb_south = llrgb_south_index.size*pop_multi
 
 	ec_lon = ec_lon[llrgb_south_mask]
 	ec_lat = ec_lat[llrgb_south_mask]
@@ -60,7 +65,7 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 	# Select only stars that show up in one sector at least
 	med_mask = med_sec > 0
 	sample_index = llrgb_south_index[med_mask]
-	num_sample = sample_index.size*2
+	num_sample = sample_index.size*pop_multi
 	
 	# Get data for all stars in sample
 	med_sec = med_sec[med_mask]
@@ -91,7 +96,7 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 	ubv_k = galaxia["ubv_k"][sample_index]
 
 	# Join data in a matrix
-	data = np.column_stack((sample_index, g_lon, g_lat, ec_lon, ec_lat, ra, dec, mass, radius, age, lum, teff, logg, feh
+	data = np.column_stack((sample_index, g_lon, g_lat, ec_lon, ec_lat, ra, dec, mass, radius, age, lum, teff, logg, feh,
 		observed_days, ubv_u, ubv_b, ubv_v, ubv_r, ubv_i, ubv_j, ubv_h, ubv_k))
 
 	# Generate file header
@@ -118,17 +123,11 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5):
 				print("Please input y or n")
 				continue
 
-	"""
-	# convert to apparent mag and apply reddening
-	gxutil.abs2app(galaxia,corr=True)
 
-	plt.hist(galaxia['ubv_i'],bins=100)
-	plt.show()
-	"""
 
-def plot_hr():
+def plot_hr(pop_multi=10):
 	galaxia = ebf.read('data/tess.ebf','/')
-	num_stars = galaxia["teff"].size*2
+	num_stars = galaxia["teff"].size*pop_multi
 
 	# Cut in Teff
 	teff_cut = 10**galaxia["teff"] < teff_upper

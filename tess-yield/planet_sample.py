@@ -18,7 +18,7 @@ G = 6.6743e-8
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
 
-def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, plot_hist=0, verbose=0):
+def planet_seeding(planet_rate, min_n_transits=2, write_output=0, sensitivity_csv=0, plot_hist=0, pop_multi=10, verbose=0):
 	
 	# -------------------------------------------
 	# ------------ Planet Seeding ---------------
@@ -28,7 +28,7 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 	ubv_u, ubv_b, ubv_v, ubv_r, ubv_i, ubv_j, ubv_h, ubv_k) = np.loadtxt("data/star_sample_complete.dat", unpack=True)
 
 	# Parameter definition for building csv data
-	if build_csv:
+	if sensitivity_csv:
 		planet_rate = 1.0
 		min_n_transits = 2
 
@@ -49,6 +49,7 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 	# Loop that samples periods and radius for the seeded planets until all values are physically consistent
 	invalid_planets = np.ones(has_planet.sum(), dtype=bool)
 	while np.any(invalid_planets):
+		# ADD sensitivity_csv OPTION WITH UNIFORM DISTRIBUTIONS
 		# Draw period samples (in days from a lognormal distribution. Values from Thomas North)
 		period[invalid_planets] = np.random.lognormal(2.344, 1.275, invalid_planets.sum())
 		# Draw planet radius samples (in R_earth)
@@ -70,7 +71,7 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 	# Draw cos(i) distribution
 	cos_i = np.random.uniform(0.0, 1.0, has_planet.sum())
 	# Determine impact parameter
-	if build_csv:
+	if sensitivity_csv:
 		b = np.zeros(planet_radius.size)
 	else:
 		b = (a * cos_i) / (radius[has_planet]*Rsun)
@@ -114,8 +115,14 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 	# Add noise in quadrature
 	noise = np.sqrt(rms**2 + shotnoise**2)
 
+	print(ubv_i[has_planet][has_transit][has_min_transits][:20])
+	print(npix_aper[:20])
+	print(rms[:20])
+	print(shotnoise[:20])
+	print(noise[:20])
+
 	# Signal to noise ratio
-	if build_csv:
+	if sensitivity_csv:
 		SNR = (t_depth[has_min_transits] / (noise)) * np.sqrt(n_transits[has_min_transits])
 	else:
 		SNR = 10
@@ -132,10 +139,10 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 	# Writes the number of planets seeded, with transits and detected into a file
 	if write_output:
 		with open("data/planet_rate_" + str(planet_rate) + ".dat", "a") as f:
-			f.write("{:9d}   {:8d}   {:10d}\n".format(has_planet.sum() * 2, has_transit.sum() * 2, num_detectable * 2))
+			f.write("{:9d}   {:8d}   {:10d}\n".format(has_planet.sum() * pop_multi, has_transit.sum() * pop_multi, num_detectable * pop_multi))
 	
-	# Only called when building the csv file to compute the detectability plot
-	if build_csv:
+	# Only called when building the csv file to compute the sensitivity plot
+	if sensitivity_csv:
 		data = np.column_stack((mass[has_planet][has_transit][has_min_transits], radius[has_planet][has_transit][has_min_transits], 
 								teff[has_planet][has_transit][has_min_transits], logg[has_planet][has_transit][has_min_transits], 
 								observed_days[has_planet][has_transit][has_min_transits], period[has_transit][has_min_transits], 
@@ -149,13 +156,13 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, build_csv=0, p
 	# ----------------------------------------------
 	if verbose:
 		print("\nPlanet rate of " + str(planet_rate*100) + "%")
-		print("\nNumber of stars with seeded planets: " + str(has_planet.sum() * 2))
+		print("\nNumber of stars with seeded planets: " + str(has_planet.sum() * pop_multi))
 		print("Percentage of stars with seeded planets: " + str(has_planet.sum()*1.0 / mass.size))
-		print("\nNumber of stars with transiting planets: " + str(has_transit.sum() * 2))
+		print("\nNumber of stars with transiting planets: " + str(has_transit.sum() * pop_multi))
 		print("Percentage of transiting planets from seeded planets: " + str(has_transit.sum()*1.0 / has_planet.sum()*1.0))
-		print("\nNumber of planets with at least 2 transits: " + str(has_min_transits.sum()*2))
+		print("\nNumber of planets with at least 2 transits: " + str(has_min_transits.sum()*pop_multi))
 		print("Percentage of transiting planets with at least 2 transits: " + str(has_min_transits.sum()*1.0 / has_transit.sum()*1.0))
-		print("\nNumber of detectable planets: " + str(num_detectable))
+		print("\nNumber of detectable planets: " + str(num_detectable*pop_multi))
 		print("Percentage of detectable planets from transiting planets: " + str(num_detectable/has_transit.sum()))
 
 	# ----------------------------------------------
@@ -293,5 +300,5 @@ def multi_seeding(planet_rates, num_iter=300):
 
 if __name__ == "__main__":
 	#planet_rates = [0.1, 0.05, 0.01]
-	#multi_seeding(planet_rates)
-	planet_seeding(0.01, verbose=1)
+	#multi_seeding(planet_rates, num_iter=500)
+	#planet_seeding(0.01, verbose=1)
