@@ -27,7 +27,6 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5, pop_m
 	
 	# Convert magnitudes to apparent mag and apply reddening
 	gxutil.abs2app(galaxia,corr=True)
-	sys.exit()
 
 	# Cut in Teff
 	teff_cut = 10**galaxia["teff"] < teff_upper
@@ -110,18 +109,21 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5, pop_m
 		"Logg", "FeH", "Days", "uvb_u", "uvb_b", "uvb_v", "uvb_r", "uvb_i", "uvb_j", "uvb_h", "uvb_k", )
 	
 	# Save data to file. Prompt for overwrite if file exists
-	if os.path.exists("data/star_sample.dat"):
+	txtformat = '%7d %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %12.4f %9.4f %6.1f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f'
+	savefile = "star_sample_2.dat"
+	if os.path.exists("data/" + savefile):
 		while True:
 			entry = input("Overwrite star_sample.dat file? [y/n]")
 			if entry.lower() == "y" or entry.lower() == "yes":
-				txtformat = '%7d %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %12.4f %9.4f %6.1f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f'
-				np.savetxt("data/star_sample.dat", data, fmt=txtformat, header=header)
+				np.savetxt("data/" + savefile, data, fmt=txtformat, header=header)
 				break
 			elif entry.lower() == "n" or entry.lower() == "no":
 				break
 			else:
 				print("Please input y or n")
 				continue
+	else:
+		np.savetxt("data/" + savefile, data, fmt=txtformat, header=header)
 
 
 
