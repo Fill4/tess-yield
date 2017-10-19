@@ -111,6 +111,8 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, sensitivity_cs
 		teff[has_planet][has_transit][has_min_transits], ec_lon[has_planet][has_transit][has_min_transits], 
 		ec_lat[has_planet][has_transit][has_min_transits], g_lon[has_planet][has_transit][has_min_transits], 
 		g_lat[has_planet][has_transit][has_min_transits], npix_aper=npix_aper)
+	# Shot noise initial value is for one hour of observations. Convert to transit duration
+	shotnoise = shotnoise / (np.sqrt(transit_duration[has_min_transits]))
 
 	# Add noise in quadrature
 	noise = np.sqrt(rms**2 + shotnoise**2)

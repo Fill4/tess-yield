@@ -28,12 +28,14 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5, pop_m
 	# Convert magnitudes to apparent mag and apply reddening
 	gxutil.abs2app(galaxia,corr=True)
 
+	# Magnitude cut
+	mag_cut = galaxia["ubv_i"] < 13
 	# Cut in Teff
 	teff_cut = 10**galaxia["teff"] < teff_upper
 	# Cut in Logg
 	logg_cut = np.logical_and(galaxia["grav"] > logg_lower, galaxia["grav"] < logg_upper)
 	# Join vectors
-	llrgb_mask = np.logical_and(teff_cut, logg_cut)
+	llrgb_mask = np.logical_and(np.logical_and(teff_cut, logg_cut), mag_cut)
 	non_llrgb_mask = np.invert(llrgb_mask)
 	llrgb_index = np.where(llrgb_mask)[0]
 	num_llrgb = llrgb_index.size*pop_multi
@@ -68,6 +70,7 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5, pop_m
 	
 	# Get data for all stars in sample
 	med_sec = med_sec[med_mask]
+	min_sec = min_sec[med_mask]
 	ra = ra[med_mask]
 	dec = dec[med_mask]
 	ec_lon = ec_lon[med_mask]
@@ -83,7 +86,8 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5, pop_m
 	lum = galaxia["lum"][sample_index]
 	logg = galaxia["grav"][sample_index]
 	radius = np.sqrt(G * mass * Msun / 10**logg) / Rsun
-	observed_days = med_sec.astype(int) * 27.4
+	med_obs = med_sec.astype(int) * 27.4
+	min_obs = min_sec.astype(int) * 27.4
 
 	ubv_u = galaxia["ubv_u"][sample_index]
 	ubv_b = galaxia["ubv_b"][sample_index]
@@ -96,7 +100,7 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5, pop_m
 
 	# Join data in a matrix
 	data = np.column_stack((sample_index, g_lon, g_lat, ec_lon, ec_lat, ra, dec, mass, radius, age, lum, teff, logg, feh,
-		observed_days, ubv_u, ubv_b, ubv_v, ubv_r, ubv_i, ubv_j, ubv_h, ubv_k))
+		med_obs, min_obs, ubv_u, ubv_b, ubv_v, ubv_r, ubv_i, ubv_j, ubv_h, ubv_k))
 
 	# Generate file header
 	header =  "Data from the complete star file, including the factor of 2 correction \n"
@@ -104,12 +108,12 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5, pop_m
 	header += "{:}{:}\n".format("Total number of llrgb stars: ", num_llrgb)
 	header += "{:}{:}\n".format("Total number of llrgb stars south of the ecliptic: ", num_llrgb_south)
 	header += "{:}{:}\n\n".format("Total number of llrgb stars south of the ecliptic, observable by TESS: ", num_sample)
-	header += "{:5}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>13}{:>10}{:>10}{:>7}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}".format(
+	header += "{:5}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>13}{:>10}{:>10}{:>7}{:>7}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}".format(
 		"Index", "Gal_Lon", "Gal_Lat", "Ec_Lon", "Ec_Lat", "Ra", "Dec", "Mass", "Radius", "Age", "Lum", "Teff", 
-		"Logg", "FeH", "Days", "uvb_u", "uvb_b", "uvb_v", "uvb_r", "uvb_i", "uvb_j", "uvb_h", "uvb_k", )
+		"Logg", "FeH", "Med Obs", "Min Obs", "uvb_u", "uvb_b", "uvb_v", "uvb_r", "uvb_i", "uvb_j", "uvb_h", "uvb_k", )
 	
 	# Save data to file. Prompt for overwrite if file exists
-	txtformat = '%7d %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %12.4f %9.4f %6.1f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f'
+	txtformat = '%7d %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %12.4f %9.4f %9.4f %6.1f %6.1f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f'
 	savefile = "star_sample_2.dat"
 	if os.path.exists("data/" + savefile):
 		while True:
