@@ -18,7 +18,7 @@ G = 6.6743e-8
 # Star data: mass, radius, teff, logg, ra, dec, observed_days, has_planet
 # Planet data: planet_mass, planet_radius, period, has_transit, t_duration
 
-def planet_seeding(planet_rate, min_n_transits=2, write_output=0, sensitivity_csv=0, plot_hist=0, pop_multi=10, verbose=0):
+def planet_seeding(planet_rate, min_n_transits=2, pop_multi=10, write_output=0, sensitivity_csv=0, plot_hist=0, plot_noise=0, verbose=0):
 	
 	# -------------------------------------------
 	# ------------ Planet Seeding ---------------
@@ -117,12 +117,6 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, sensitivity_cs
 	# Add noise in quadrature
 	noise = np.sqrt(rms**2 + shotnoise**2)
 
-	print(ubv_i[has_planet][has_transit][has_min_transits][:20])
-	print(npix_aper[:20])
-	print(rms[:20])
-	print(shotnoise[:20])
-	print(noise[:20])
-
 	# Signal to noise ratio
 	if sensitivity_csv:
 		SNR = (t_depth[has_min_transits] / (noise)) * np.sqrt(n_transits[has_min_transits])
@@ -169,10 +163,13 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, sensitivity_cs
 
 	# ----------------------------------------------
 	if plot_hist:
-		plot_hist()
+		plot_hist_function(logg, planet_radius, period, t_duration, has_planet, has_transit, has_min_transits, is_detectable)
+	if plot_noise:
+		plot_noise_function(logg, shotnoise, rms, noise, has_planet, has_transit, has_min_transits, is_detectable)
+
  	
 # Plots the distributions (planet_radius, period) for the last run of planet seeding
-def plot_hist():
+def plot_hist_function(logg, planet_radius, period, t_duration, has_planet, has_transit, has_min_transits, is_detectable):
 	# PLots for all the planets
 	plt.figure(1, figsize=(24,16), dpi=100)
 	plt.hist(planet_radius, bins=20, normed=1, alpha=0.6)
@@ -290,6 +287,32 @@ def plot_result_hist(planet_rates):
 				print_top = 0
 			print("{:^11}   {:^11.1f}   {:^11.4f}".format(str(int(rate*100)) + " %", np.median(detections), np.std(detections)))
 
+# Plot the impact of each noise component in function of the logg of the star
+def plot_noise_function(logg, shotnoise, rms, noise, has_planet, has_transit, has_min_transits, is_detectable):
+	plt.figure(13, figsize=(24,16), dpi=100)
+	plt.scatter(logg[has_planet][has_transit][has_min_transits][is_detectable], abs(shotnoise[is_detectable]-noise[is_detectable]) / noise[is_detectable], 
+		s=20, color='red', label="Detectable")
+	plt.scatter(logg[has_planet][has_transit][has_min_transits][~is_detectable], abs(shotnoise[~is_detectable]-noise[~is_detectable]) / noise[~is_detectable], 
+		s=20, color='blue', label="Not detectable")
+	plt.xlabel(r"log $g$ (g $cm^{-2}$)", fontsize=24)
+	plt.ylabel(r"Contribution of shot noise in total noise", fontsize=24)
+	plt.tick_params(labelsize=24)
+	plt.legend(fontsize=24)
+	plt.savefig("figures/" + "shotnoise_logg.png")
+
+	plt.figure(14, figsize=(24,16), dpi=100)
+	plt.scatter(logg[has_planet][has_transit][has_min_transits][is_detectable], abs(rms[is_detectable]-noise[is_detectable]) / noise[is_detectable], 
+		s=20, color='red', label="Detectable")
+	plt.scatter(logg[has_planet][has_transit][has_min_transits][~is_detectable], abs(rms[~is_detectable]-noise[~is_detectable]) / noise[~is_detectable], 
+		s=20, color='blue', label="Not detectable")
+	plt.xlabel(r"log $g$ (g $cm^{-2}$)", fontsize=24)
+	plt.ylabel(r"Contribution of rms noise in total noise", fontsize=24)
+	plt.tick_params(labelsize=24)
+	plt.legend(fontsize=24)
+	plt.savefig("figures/" + "rmsnoise_logg.png")
+
+	plt.close("all")
+
 # Runs miltiple times the planet seeding routine for diferent rates and saves the results in a file
 # Then it plots the histograms of those results
 def multi_seeding(planet_rates, num_iter=300):
@@ -303,4 +326,4 @@ def multi_seeding(planet_rates, num_iter=300):
 if __name__ == "__main__":
 	#planet_rates = [0.1, 0.05, 0.01]
 	#multi_seeding(planet_rates, num_iter=500)
-	planet_seeding(0.01, verbose=1)
+	planet_seeding(0.01, verbose=1, plot_noise=1)
