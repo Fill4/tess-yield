@@ -24,7 +24,7 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, sensitivity_cs
 	# ------------ Planet Seeding ---------------
 	# -------------------------------------------
 
-	(sample_index, g_lon, g_lat, ec_lon, ec_lat, ra, dec, mass, radius, age, lum, teff, logg, feh, observed_days, 
+	(sample_index, g_lon, g_lat, ec_lon, ec_lat, ra, dec, mass, radius, age, lum, teff, logg, feh, observed_days_med, observed_days_min,
 	ubv_u, ubv_b, ubv_v, ubv_r, ubv_i, ubv_j, ubv_h, ubv_k) = np.loadtxt("data/star_sample_complete.dat", unpack=True)
 
 	# Parameter definition for building csv data
@@ -88,7 +88,7 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, sensitivity_cs
 	t_depth = ((planet_radius[has_transit] * Rearth)**2) / ((radius[has_planet][has_transit] * Rsun)**2)
 	
 	# Determine number of transits. Use ceiling to improve number of planets
-	n_transits = np.ceil(observed_days[has_planet][has_transit]/period[has_transit]).astype(int)
+	n_transits = np.ceil(observed_days_med[has_planet][has_transit]/period[has_transit]).astype(int)
 
 	# Choose planets that transit more than 2 times
 	has_min_transits = n_transits >= min_n_transits
@@ -112,7 +112,7 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, sensitivity_cs
 		ec_lat[has_planet][has_transit][has_min_transits], g_lon[has_planet][has_transit][has_min_transits], 
 		g_lat[has_planet][has_transit][has_min_transits], npix_aper=npix_aper)
 	# Shot noise initial value is for one hour of observations. Convert to transit duration
-	shotnoise = shotnoise / (np.sqrt(transit_duration[has_min_transits]))
+	shotnoise = shotnoise / (np.sqrt(t_duration[has_min_transits]))
 
 	# Add noise in quadrature
 	noise = np.sqrt(rms**2 + shotnoise**2)
@@ -147,7 +147,7 @@ def planet_seeding(planet_rate, min_n_transits=2, write_output=0, sensitivity_cs
 	if sensitivity_csv:
 		data = np.column_stack((mass[has_planet][has_transit][has_min_transits], radius[has_planet][has_transit][has_min_transits], 
 								teff[has_planet][has_transit][has_min_transits], logg[has_planet][has_transit][has_min_transits], 
-								observed_days[has_planet][has_transit][has_min_transits], period[has_transit][has_min_transits], 
+								observed_days_med[has_planet][has_transit][has_min_transits], period[has_transit][has_min_transits], 
 								planet_radius[has_transit][has_min_transits], t_duration[has_min_transits], noise, SNR))
 
 		header = "Columns:\n{:} - {:} - {:} - {:} - {:} -\n{:} - {:} - {:} - {:} - {:}\n".format("Star Mass (Msun)", "Star Radius (Rsun)", "Teff (K)", 
@@ -303,4 +303,4 @@ def multi_seeding(planet_rates, num_iter=300):
 if __name__ == "__main__":
 	#planet_rates = [0.1, 0.05, 0.01]
 	#multi_seeding(planet_rates, num_iter=500)
-	#planet_seeding(0.01, verbose=1)
+	planet_seeding(0.01, verbose=1)
