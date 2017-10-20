@@ -108,12 +108,12 @@ def star_population(teff_upper = 5500, logg_lower = 2.5, logg_upper = 3.5, pop_m
 	header += "{:}{:}\n".format("Total number of llrgb stars: ", num_llrgb)
 	header += "{:}{:}\n".format("Total number of llrgb stars south of the ecliptic: ", num_llrgb_south)
 	header += "{:}{:}\n\n".format("Total number of llrgb stars south of the ecliptic, observable by TESS: ", num_sample)
-	header += "{:5}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>13}{:>10}{:>10}{:>7}{:>7}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}".format(
+	header += "{:5}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>13}{:>10}{:>10}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}".format(
 		"Index", "Gal_Lon", "Gal_Lat", "Ec_Lon", "Ec_Lat", "Ra", "Dec", "Mass", "Radius", "Age", "Lum", "Teff", 
 		"Logg", "FeH", "Med Obs", "Min Obs", "uvb_u", "uvb_b", "uvb_v", "uvb_r", "uvb_i", "uvb_j", "uvb_h", "uvb_k", )
 	
 	# Save data to file. Prompt for overwrite if file exists
-	txtformat = '%7d %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %12.4f %9.4f %9.4f %6.1f %6.1f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f'
+	txtformat = '%7d %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %12.4f %9.4f %9.4f %8.1f %8.1f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f'
 	savefile = "star_sample_2.dat"
 	if os.path.exists("data/" + savefile):
 		while True:
