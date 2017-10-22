@@ -97,14 +97,14 @@ def planet_seeding(planet_rate, min_n_transits=2, pop_multi=10, write_output=0, 
 	# -------- Transit Detectability ------------
 	# -------------------------------------------
 
-	# Use Dan Huber's method to determine rms values for a star's logg for various predefined transit durations
+	# Use Dan Huber's method to determine gran_noise values for a star's logg for various predefined transit durations
 	coeffs = np.loadtxt("data/noisecoeffs.dat", unpack=True)
 	tdurs = np.array([0.1,0.5,1.0,1.5,2.0,2.5])
 	res = np.array([np.polyval(coeffs[:,i][::-1], logg[has_planet][has_transit][has_min_transits]) for i in range(6)])
 
-	# Determine the rms for the planets transit by interpolating the res values
-	rms = np.array([np.interp(t_duration[has_min_transits][i]/24.0, tdurs, res[:,i]) for i in range(t_duration[has_min_transits].size)])
-	
+	# Determine the gran_noise for the planets transit by interpolating the res values
+	gran_noise = np.array([np.interp(t_duration[has_min_transits][i]/24.0, tdurs, res[:,i]) for i in range(t_duration[has_min_transits].size)])
+
 	# Determine shot noise
 	_, _, _, npix_aper = mat_script.pixel_cost(ubv_i[has_planet][has_transit][has_min_transits])
 	shotnoise = mat_script.calc_noise(ubv_i[has_planet][has_transit][has_min_transits], 1800, 
@@ -112,10 +112,14 @@ def planet_seeding(planet_rate, min_n_transits=2, pop_multi=10, write_output=0, 
 		ec_lat[has_planet][has_transit][has_min_transits], g_lon[has_planet][has_transit][has_min_transits], 
 		g_lat[has_planet][has_transit][has_min_transits], npix_aper=npix_aper)
 	# Shot noise initial value is for one hour of observations. Convert to transit duration
-	shotnoise = shotnoise / (np.sqrt(t_duration[has_min_transits]))
+	shotnoise2 = shotnoise / (np.sqrt(t_duration[has_min_transits]))
+
+	print(sum((gran_noise/shotnoise) > 1))
+	print(gran_noise[:30]/shotnoise[:30])
+	sys.exit()
 
 	# Add noise in quadrature
-	noise = np.sqrt(rms**2 + shotnoise**2)
+	noise = np.sqrt(gran_noise**2 + shotnoise**2)
 
 	# Signal to noise ratio
 	if sensitivity_csv:
@@ -165,7 +169,7 @@ def planet_seeding(planet_rate, min_n_transits=2, pop_multi=10, write_output=0, 
 	if plot_hist:
 		plot_hist_function(logg, planet_radius, period, t_duration, has_planet, has_transit, has_min_transits, is_detectable)
 	if plot_noise:
-		plot_noise_function(logg, shotnoise, rms, noise, has_planet, has_transit, has_min_transits, is_detectable)
+		plot_noise_function(logg, shotnoise, gran_noise, noise, has_planet, has_transit, has_min_transits, is_detectable)
 
  	
 # Plots the distributions (planet_radius, period) for the last run of planet seeding
@@ -288,7 +292,7 @@ def plot_result_hist(planet_rates):
 			print("{:^11}   {:^11.1f}   {:^11.4f}".format(str(int(rate*100)) + " %", np.median(detections), np.std(detections)))
 
 # Plot the impact of each noise component in function of the logg of the star
-def plot_noise_function(logg, shotnoise, rms, noise, has_planet, has_transit, has_min_transits, is_detectable):
+def plot_noise_function(logg, shotnoise, gran_noise, noise, has_planet, has_transit, has_min_transits, is_detectable):
 	plt.figure(13, figsize=(24,16), dpi=100)
 	plt.scatter(logg[has_planet][has_transit][has_min_transits][is_detectable], abs(shotnoise[is_detectable]-noise[is_detectable]) / noise[is_detectable], 
 		s=20, color='red', label="Detectable")
@@ -301,15 +305,37 @@ def plot_noise_function(logg, shotnoise, rms, noise, has_planet, has_transit, ha
 	plt.savefig("figures/" + "shotnoise_logg.png")
 
 	plt.figure(14, figsize=(24,16), dpi=100)
-	plt.scatter(logg[has_planet][has_transit][has_min_transits][is_detectable], abs(rms[is_detectable]-noise[is_detectable]) / noise[is_detectable], 
+	plt.scatter(logg[has_planet][has_transit][has_min_transits][is_detectable], abs(gran_noise[is_detectable]-noise[is_detectable]) / noise[is_detectable], 
 		s=20, color='red', label="Detectable")
-	plt.scatter(logg[has_planet][has_transit][has_min_transits][~is_detectable], abs(rms[~is_detectable]-noise[~is_detectable]) / noise[~is_detectable], 
+	plt.scatter(logg[has_planet][has_transit][has_min_transits][~is_detectable], abs(gran_noise[~is_detectable]-noise[~is_detectable]) / noise[~is_detectable], 
 		s=20, color='blue', label="Not detectable")
 	plt.xlabel(r"log $g$ (g $cm^{-2}$)", fontsize=24)
-	plt.ylabel(r"Contribution of rms noise in total noise", fontsize=24)
+	plt.ylabel(r"Contribution of granulation noise in total noise", fontsize=24)
 	plt.tick_params(labelsize=24)
 	plt.legend(fontsize=24)
-	plt.savefig("figures/" + "rmsnoise_logg.png")
+	plt.savefig("figures/" + "grannoise_logg.png")
+
+	plt.figure(15, figsize=(24,16), dpi=100)
+	plt.scatter(logg[has_planet][has_transit][has_min_transits][is_detectable], np.log10(gran_noise[is_detectable] / shotnoise[is_detectable]), 
+		s=20, color='red', label="Detectable")
+	plt.scatter(logg[has_planet][has_transit][has_min_transits][~is_detectable], np.log10(gran_noise[~is_detectable] / shotnoise[~is_detectable]), 
+		s=20, color='blue', label="Not detectable")
+	plt.xlabel(r"log $g$ (g $cm^{-2}$)", fontsize=24)
+	plt.ylabel(r"Granulation noise / Shot noise", fontsize=24)
+	plt.tick_params(labelsize=24)
+	plt.legend(fontsize=24)
+	plt.savefig("figures/" + "gran_shot_noise_logg.png")
+
+	plt.figure(16, figsize=(24,16), dpi=100)
+	plt.scatter(logg[has_planet][has_transit][has_min_transits], gran_noise, 
+		s=25, color='red', label="Granulation noise, Det")
+	plt.scatter(logg[has_planet][has_transit][has_min_transits], shotnoise, 
+		s=25, color='blue', label="Shot noise")
+	plt.xlabel(r"log $g$ (g $cm^{-2}$)", fontsize=24)
+	plt.ylabel(r"Noise", fontsize=24)
+	plt.tick_params(labelsize=24)
+	plt.legend(fontsize=24)
+	plt.savefig("figures/" + "gran_shot_noise_logg.png")
 
 	plt.close("all")
 
