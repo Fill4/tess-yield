@@ -112,11 +112,7 @@ def planet_seeding(planet_rate, min_n_transits=2, pop_multi=10, write_output=0, 
 		ec_lat[has_planet][has_transit][has_min_transits], g_lon[has_planet][has_transit][has_min_transits], 
 		g_lat[has_planet][has_transit][has_min_transits], npix_aper=npix_aper)
 	# Shot noise initial value is for one hour of observations. Convert to transit duration
-	shotnoise2 = shotnoise / (np.sqrt(t_duration[has_min_transits]))
-
-	print(sum((gran_noise/shotnoise) > 1))
-	print(gran_noise[:30]/shotnoise[:30])
-	sys.exit()
+	shotnoise = shotnoise / (np.sqrt(t_duration[has_min_transits]))
 
 	# Add noise in quadrature
 	noise = np.sqrt(gran_noise**2 + shotnoise**2)
@@ -333,9 +329,10 @@ def plot_noise_function(logg, shotnoise, gran_noise, noise, has_planet, has_tran
 		s=25, color='blue', label="Shot noise")
 	plt.xlabel(r"log $g$ (g $cm^{-2}$)", fontsize=24)
 	plt.ylabel(r"Noise", fontsize=24)
+	plt.ylim([0.0, 1.1*max(shotnoise.max(), gran_noise.max())])
 	plt.tick_params(labelsize=24)
 	plt.legend(fontsize=24)
-	plt.savefig("figures/" + "gran_shot_noise_logg.png")
+	plt.savefig("figures/" + "noise_logg.png")
 
 	plt.close("all")
 
