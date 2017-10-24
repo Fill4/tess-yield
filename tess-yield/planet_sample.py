@@ -49,11 +49,14 @@ def planet_seeding(planet_rate, min_n_transits=2, pop_multi=10, write_output=0, 
 	# Loop that samples periods and radius for the seeded planets until all values are physically consistent
 	invalid_planets = np.ones(has_planet.sum(), dtype=bool)
 	while np.any(invalid_planets):
-		# ADD sensitivity_csv OPTION WITH UNIFORM DISTRIBUTIONS
 		# Draw period samples (in days from a lognormal distribution. Values from Thomas North)
-		period[invalid_planets] = np.random.lognormal(2.344, 1.275, invalid_planets.sum())
 		# Draw planet radius samples (in R_earth)
-		planet_radius[invalid_planets] = X.rvs(invalid_planets.sum())
+		if sensitivity_csv:
+			period[invalid_planets] = np.random.uniform(3.4, 29.0, invalid_planets.sum())
+			planet_radius[invalid_planets] = np.random.uniform(6.0, 22.0, invalid_planets.sum())
+		else:
+			period[invalid_planets] = np.random.lognormal(2.344, 1.275, invalid_planets.sum())
+			planet_radius[invalid_planets] = X.rvs(invalid_planets.sum())
 		# Determine planet mass using Equation 29 from Sullivan et al. 2015 (in M_earth)
 		planet_mass[invalid_planets] = 2.69 * planet_radius[invalid_planets]**0.93
 		# Determine Roche limit
@@ -107,6 +110,7 @@ def planet_seeding(planet_rate, min_n_transits=2, pop_multi=10, write_output=0, 
 
 	# Determine shot noise
 	_, _, _, npix_aper = mat_script.pixel_cost(ubv_i[has_planet][has_transit][has_min_transits])
+	#npix_aper[:] = 30
 	shotnoise = mat_script.calc_noise(ubv_i[has_planet][has_transit][has_min_transits], 1800, 
 		teff[has_planet][has_transit][has_min_transits], ec_lon[has_planet][has_transit][has_min_transits], 
 		ec_lat[has_planet][has_transit][has_min_transits], g_lon[has_planet][has_transit][has_min_transits], 
@@ -165,7 +169,7 @@ def planet_seeding(planet_rate, min_n_transits=2, pop_multi=10, write_output=0, 
 	if plot_hist:
 		plot_hist_function(logg, planet_radius, period, t_duration, has_planet, has_transit, has_min_transits, is_detectable)
 	if plot_noise:
-		plot_noise_function(logg, shotnoise, gran_noise, noise, has_planet, has_transit, has_min_transits, is_detectable)
+		plot_noise_function(logg, ubv_i, shotnoise, gran_noise, noise, has_planet, has_transit, has_min_transits, is_detectable)
 
  	
 # Plots the distributions (planet_radius, period) for the last run of planet seeding
@@ -288,7 +292,8 @@ def plot_result_hist(planet_rates):
 			print("{:^11}   {:^11.1f}   {:^11.4f}".format(str(int(rate*100)) + " %", np.median(detections), np.std(detections)))
 
 # Plot the impact of each noise component in function of the logg of the star
-def plot_noise_function(logg, shotnoise, gran_noise, noise, has_planet, has_transit, has_min_transits, is_detectable):
+def plot_noise_function(logg, ubv_i, shotnoise, gran_noise, noise, has_planet, has_transit, has_min_transits, is_detectable):
+	"""
 	plt.figure(13, figsize=(24,16), dpi=100)
 	plt.scatter(logg[has_planet][has_transit][has_min_transits][is_detectable], abs(shotnoise[is_detectable]-noise[is_detectable]) / noise[is_detectable], 
 		s=20, color='red', label="Detectable")
@@ -333,8 +338,23 @@ def plot_noise_function(logg, shotnoise, gran_noise, noise, has_planet, has_tran
 	plt.tick_params(labelsize=24)
 	plt.legend(fontsize=24)
 	plt.savefig("figures/" + "noise_logg.png")
+	"""
 
-	plt.close("all")
+	plt.figure(17, figsize=(24,16), dpi=100)
+	plt.scatter(ubv_i[has_planet][has_transit][has_min_transits][is_detectable], shotnoise[is_detectable], 
+		s=25, color='red', label="Detectable")
+	plt.scatter(ubv_i[has_planet][has_transit][has_min_transits][~is_detectable], shotnoise[~is_detectable], 
+		s=25, color='blue', label="All")
+	plt.xlabel(r"log $g$ (g $cm^{-2}$)", fontsize=24)
+	plt.ylabel(r"Noise", fontsize=24)
+	plt.ylim([0.0, 0.002])
+	plt.xlim([0.0, 13.0])
+	plt.tick_params(labelsize=24)
+	plt.legend(fontsize=24)
+	plt.show()
+	#plt.savefig("figures/" + "noise_mag.png")
+
+	#plt.close("all")
 
 # Runs miltiple times the planet seeding routine for diferent rates and saves the results in a file
 # Then it plots the histograms of those results
@@ -349,4 +369,4 @@ def multi_seeding(planet_rates, num_iter=300):
 if __name__ == "__main__":
 	#planet_rates = [0.1, 0.05, 0.01]
 	#multi_seeding(planet_rates, num_iter=500)
-	planet_seeding(0.01, verbose=1, plot_noise=1)
+	planet_seeding(0.01, verbose=1, plot_noise=0)

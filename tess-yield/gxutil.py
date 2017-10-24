@@ -56,7 +56,7 @@ def abs2app(data,noext=False,dered=False,corr=False):
 	"""
 	dmod=5.0*np.log10(100.0*data['rad'])
 	if dered:
-		ebv=data['exbv_schlegel']-data['exbv_schlegel_inf'] 
+		ebv=data['exbv_schlegel']-data['exbv_schlegel_inf']
 	else:
 		ebv=data['exbv_schlegel']*1.0
 	if corr:
