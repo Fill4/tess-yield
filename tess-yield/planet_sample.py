@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Calculates the yield of detectable transiting planets using the star sample from the star_sample.py script
+# The __main__ code at the bottom executes the various fucntions available
+
 #import gxutil
 import matplotlib.pyplot as plt
 import numpy as np
@@ -369,4 +372,4 @@ def multi_seeding(planet_rates, num_iter=300):
 if __name__ == "__main__":
 	#planet_rates = [0.1, 0.05, 0.01]
 	#multi_seeding(planet_rates, num_iter=500)
-	planet_seeding(0.01, verbose=1, plot_noise=0)
+	#planet_seeding(0.01, verbose=1, plot_noise=0)
